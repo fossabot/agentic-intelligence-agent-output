@@ -1,5 +1,24 @@
 const Pusher = require('pusher');
 
+// Tell Vercel NOT to pre-parse the body
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+// Helper to read raw body from request
+function getRawBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.on('data', (chunk) => {
+      data += chunk.toString();
+    });
+    req.on('end', () => resolve(data));
+    req.on('error', (err) => reject(err));
+  });
+}
+
 module.exports = async function handler(req, res) {
 
   // Only allow POST requests
@@ -15,38 +34,27 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  // Handle body parsing manually regardless of content-type
+  // Read and parse raw body manually
   let content, type;
-  
+
   try {
-    // If body is already parsed as object
-    if (typeof req.body === 'object' && req.body !== null) {
-      content = req.body.content;
-      type = req.body.type;
-    } 
-    // If body came in as a string
-    else if (typeof req.body === 'string') {
-      const parsed = JSON.parse(req.body);
-      content = parsed.content;
-      type = parsed.type;
-    }
-    // If body is a Buffer
-    else if (Buffer.isBuffer(req.body)) {
-      const parsed = JSON.parse(req.body.toString());
-      content = parsed.content;
-      type = parsed.type;
-    }
+    const rawBody = await getRawBody(req);
+    console.log('Raw body received:', rawBody);
+    
+    const parsed = JSON.parse(rawBody);
+    content = parsed.content;
+    type = parsed.type;
+
   } catch (parseError) {
     console.error('Body parse error:', parseError.message);
-    return res.status(400).json({ error: 'Could not parse request body' });
+    return res.status(400).json({ 
+      error: 'Could not parse body',
+      details: parseError.message
+    });
   }
 
   if (!content) {
-    return res.status(400).json({ 
-      error: 'No content provided',
-      receivedBody: JSON.stringify(req.body),
-      bodyType: typeof req.body
-    });
+    return res.status(400).json({ error: 'No content provided' });
   }
 
   // Initialize Pusher
