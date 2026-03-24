@@ -108,7 +108,7 @@ function publishToAbly(apiKey, channelName, eventName, data) {
 
     const payload = JSON.stringify({
       name: eventName,
-      data: JSON.stringify(data)
+      data: data
     });
 
     console.log('Publishing to Ably REST API...');
