@@ -1,1 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Claude Agent Live Output</title>
+  <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: #1a1d27;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      border: 1px solid #2a2d3a;
+    }
+
+    header h1 { font-size: 1.4rem; color: #ffffff; }
+
+    #status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+
+    #status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #555;
+      transition: background 0.3s;
+    }
+
+    #status-dot.connected { background: #22c55e; }
+    #status-dot.receiving { background: #f59e0b; animation: pulse 0.5s; }
+    #status-dot.error { background: #ef4444; }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.4); }
+    }
+
+    #timestamp {
+      font-size: 0.75rem;
+      color: #666;
+      margin-bottom: 12px;
+    }
+
+    #output-container {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 12px;
+      padding: 28px;
+      min-height: 300px;
+      transition: border-color 0.3s;
+    }
+
+    #output-container.updating { border-color: #f59e0b; }
+
+    #output-content { line-height: 1.7; }
+
+    #output-content h1,
+    #output-content h2,
+    #output-content h3 {
+      color: #ffffff;
+      margin: 16px 0 8px;
+    }
+
+    #output-content p { margin-bottom: 12px; color: #c0c0c0; }
+
+    #output-content ul,
+    #output-content ol {
+      padding-left: 24px;
+      margin-bottom: 12px;
+    }
+
+    #output-content li { margin-bottom: 6px; color: #c0c0c0; }
+
+    #output-content code {
+      background: #2a2d3a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.9em;
+      color: #a78bfa;
+    }
+
+    #output-content pre {
+      background: #2a2d3a;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-bottom: 12px;
+    }
+
+    #output-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+    }
+
+    #output-content th,
+    #output-content td {
+      border: 1px solid #2a2d3a;
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    #output-content th { background: #2a2d3a; color: #fff; }
+
+    .history-section { margin-top: 24px; }
+
+    .history-section h3 {
+      color: #888;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .history-item {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🤖 Claude Agent Live Output</h1>
+    <div id="status-indicator">
+      <div id="status-dot"></div>
+      <span id="status-text">Connecting...</span>
+    </div>
+  </header>
+
+  <div id="timestamp">Waiting for first update...</div>
+
+  <div id="output-container">
+    <div id="output-content">
+      <p style="color:#444; text-align:center; padding:60px 0">
+        ⏳ Waiting for agent output...
+      </p>
+    </div>
+  </div>
+
+  <div class="history-section">
+    <h3>Previous Updates</h3>
+    <div id="history-list"></div>
+  </div>
+
+  <script>
+    // ============================================================
+    // REPLACE THESE with your actual Pusher values
+    // ============================================================
+    const PUSHER_KEY = 'your_pusher_key_here';
+    const PUSHER_CLUSTER = 'us2';
+    // ============================================================
+
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const outputContent = document.getElementById('output-content');
+    const outputContainer = document.getElementById('output-container');
+    const timestampEl = document.getElementById('timestamp');
+    const historyList = document.getElementById('history-list');
+    let updateHistory = [];
+
+    const pusher = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
+    const channel = pusher.subscribe('agent-channel');
+
+    pusher.connection.bind('connected', () => {
+      statusDot.className = 'connected';
+      statusText.textContent = 'Connected — Listening for updates';
+    });
+
+    pusher.connection.bind('disconnected', () => {
+      statusDot.className = '';
+      statusText.textContent = 'Disconnected';
+    });
+
+    pusher.connection.bind('error', () => {
+      statusDot.className = 'error';
+      statusText.textContent = 'Connection error';
+    });
+
+    channel.bind('agent-update', (data) => {
+      statusDot.className = 'receiving';
+      statusText.textContent = 'Receiving update...';
+      outputContainer.classList.add('updating');
+
+      // Save current to history
+      if (outputContent.innerText.trim() &&
+          !outputContent.innerText.includes('Waiting')) {
+        updateHistory.unshift({
+          timestamp: timestampEl.textContent,
+          preview: outputContent.innerText.substring(0, 80) + '...'
+        });
+        if (updateHistory.length > 5) updateHistory.pop();
+        renderHistory();
+      }
+
+      setTimeout(() => {
+        if (data.type === 'html') {
+          outputContent.innerHTML = DOMPurify.sanitize(data.content);
+        } else if (data.type === 'json') {
+          try {
+            const parsed = JSON.parse(data.content);
+            outputContent.innerHTML =
+              `<pre><code>${JSON.stringify(parsed, null, 2)}</code></pre>`;
+          } catch {
+            outputContent.innerHTML = `<pre><code>${data.content}</code></pre>`;
+          }
+        }
+
+        const d = new Date(data.timestamp);
+        timestampEl.textContent =
+          `Last updated: ${d.toLocaleTimeString()} on ${d.toLocaleDateString()}`;
+
+        statusDot.className = 'connected';
+        statusText.textContent = 'Connected — Listening for updates';
+        outputContainer.classList.remove('updating');
+      }, 300);
+    });
+
+    function renderHistory() {
+      historyList.innerHTML = updateHistory.map(item => `
+        <div class="history-item">
+          <strong>${item.timestamp}</strong><br/>
+          ${item.preview}
+        </div>
+      `).join('');
+    }
+  </script>
+
+</body>
+</html>
