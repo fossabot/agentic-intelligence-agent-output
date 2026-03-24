@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Intelligence Analyst Agent</title>
-  <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+  <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -190,10 +190,9 @@
 
   <script>
     // ============================================================
-    // REPLACE THESE with your actual Pusher values
+    // REPLACE THIS with your actual Ably API key
     // ============================================================
-    const PUSHER_KEY = '26518886b08bd17fdfbd';
-    const PUSHER_CLUSTER = 'us2';
+    const ABLY_KEY = 'mjcDhw.jPFZOQ:0zwnkXUmoeOFO-fecuPTrpUCnx44HAcmxxXuZXLpQ9g';
     // ============================================================
 
     const statusDot = document.getElementById('status-dot');
@@ -204,20 +203,22 @@
     const historyList = document.getElementById('history-list');
     let updateHistory = [];
 
-    const pusher = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
-    const channel = pusher.subscribe('agent-channel');
+    // Initialize Ably
+    const ably = new Ably.Realtime(ABLY_KEY);
+    const channel = ably.channels.get('agent-channel');
 
-    pusher.connection.bind('connected', () => {
+    // Connection status handlers
+    ably.connection.on('connected', () => {
       statusDot.className = 'connected';
       statusText.textContent = 'Connected — Listening for updates';
     });
 
-    pusher.connection.bind('disconnected', () => {
+    ably.connection.on('disconnected', () => {
       statusDot.className = '';
       statusText.textContent = 'Disconnected';
     });
 
-    pusher.connection.bind('error', () => {
+    ably.connection.on('failed', () => {
       statusDot.className = 'error';
       statusText.textContent = 'Connection error';
     });
@@ -272,12 +273,15 @@
       return html;
     }
 
-    channel.bind('agent-update', (data) => {
+    // Listen for agent updates from Ably
+    channel.subscribe('agent-update', (message) => {
+      const data = message.data;
+
       statusDot.className = 'receiving';
       statusText.textContent = 'Receiving update...';
       outputContainer.classList.add('updating');
 
-      // Save current to history
+      // Save current content to history
       if (outputContent.innerText.trim() &&
           !outputContent.innerText.includes('Waiting')) {
         updateHistory.unshift({
