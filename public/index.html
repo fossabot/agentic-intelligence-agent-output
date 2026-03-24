@@ -273,7 +273,16 @@
 
     // Listen for agent updates from Ably
     channel.subscribe('agent-update', (message) => {
-      const data = message.data;
+    // Handle both string and object data
+    let data = message.data;
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch (e) {
+        console.error('Could not parse message data:', e);
+        return;
+      }
+    }
 
       statusDot.className = 'receiving';
       statusText.textContent = 'Receiving update...';
