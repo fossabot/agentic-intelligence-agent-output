@@ -71,7 +71,6 @@
 
     #output-container.updating { border-color: #f59e0b; }
 
-    /* Section Cards */
     .section-card {
       background: #12151f;
       border: 1px solid #2a2d3a;
@@ -92,7 +91,6 @@
       gap: 8px;
     }
 
-    /* Executive Summary */
     .exec-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -161,14 +159,15 @@
       background: rgba(34, 197, 94, 0.05);
     }
 
-    /* Risk Findings */
     .risk-card {
-      background: #12151f;
+      background: #1a1d27;
       border: 1px solid #2a2d3a;
       border-radius: 10px;
       padding: 20px;
       margin-bottom: 16px;
     }
+
+    .risk-card:last-child { margin-bottom: 0; }
 
     .risk-header {
       display: flex;
@@ -193,6 +192,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1px;
+      white-space: nowrap;
     }
 
     .rating-critical {
@@ -219,7 +219,6 @@
       border: 1px solid #22c55e;
     }
 
-    /* Field Labels */
     .field-label {
       font-size: 0.75rem;
       color: #a78bfa;
@@ -236,7 +235,6 @@
       line-height: 1.6;
     }
 
-    /* Lists */
     .field-list {
       list-style: none;
       padding: 0;
@@ -245,10 +243,11 @@
 
     .field-list li {
       padding: 6px 0 6px 16px;
-      border-bottom: 1px solid #1a1d27;
+      border-bottom: 1px solid #12151f;
       color: #c0c0c0;
       font-size: 0.9rem;
       position: relative;
+      line-height: 1.5;
     }
 
     .field-list li:before {
@@ -258,11 +257,8 @@
       color: #a78bfa;
     }
 
-    .field-list li:last-child {
-      border-bottom: none;
-    }
+    .field-list li:last-child { border-bottom: none; }
 
-    /* Evidence Block */
     .evidence-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -270,7 +266,7 @@
     }
 
     .evidence-block {
-      background: #1a1d27;
+      background: #12151f;
       border-radius: 8px;
       padding: 12px;
     }
@@ -290,13 +286,14 @@
       color: #22c55e;
       padding: 2px 0;
       word-break: break-all;
+      line-height: 1.5;
     }
 
-    /* MITRE ATT&CK */
     .mitre-grid {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
+      margin-top: 4px;
     }
 
     .mitre-tag {
@@ -309,7 +306,6 @@
       font-family: monospace;
     }
 
-    /* Threat Actors */
     .actor-tag {
       display: inline-block;
       background: rgba(245, 158, 11, 0.1);
@@ -321,7 +317,6 @@
       margin: 4px;
     }
 
-    /* Recommendations */
     .rec-list {
       list-style: none;
       padding: 0;
@@ -331,7 +326,7 @@
     .rec-list li {
       counter-increment: rec-counter;
       padding: 8px 8px 8px 36px;
-      border-bottom: 1px solid #1a1d27;
+      border-bottom: 1px solid #12151f;
       color: #c0c0c0;
       font-size: 0.9rem;
       line-height: 1.5;
@@ -355,11 +350,47 @@
       font-weight: 700;
     }
 
-    .rec-list li:last-child {
-      border-bottom: none;
+    .rec-list li:last-child { border-bottom: none; }
+
+    .rec-section {
+      margin-bottom: 16px;
     }
 
-    /* History */
+    .rec-section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+
+    .rec-section-title.critical-rec {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .rec-section-title.high-rec {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+
+    .rec-section-title.medium-rec {
+      background: rgba(59, 130, 246, 0.15);
+      color: #3b82f6;
+    }
+
+    .rec-section-title.ongoing-rec {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+    }
+
+    .risk-divider {
+      border: none;
+      border-top: 1px solid #2a2d3a;
+      margin: 8px 0 16px 0;
+    }
+
     .history-section { margin-top: 24px; }
 
     .history-section h3 {
@@ -381,17 +412,7 @@
       cursor: pointer;
     }
 
-    .history-item:hover {
-      border-color: #555;
-      color: #aaa;
-    }
-
-    /* Divider */
-    .risk-divider {
-      border: none;
-      border-top: 1px solid #2a2d3a;
-      margin: 8px 0 16px 0;
-    }
+    .history-item:hover { border-color: #555; color: #aaa; }
 
     @media (max-width: 600px) {
       .exec-grid { grid-template-columns: 1fr; }
@@ -403,7 +424,7 @@
 <body>
 
   <header>
-    <h1>🛡️🤖 Agentic Intelligence Agent's Live Output 🔎📊</h1>
+    <h1>🛡️🤖 Agentic Intelligence Agent's Live Output 🔎📊/h1>
     <div id="status-indicator">
       <div id="status-dot"></div>
       <span id="status-text">Connecting...</span>
@@ -434,7 +455,6 @@
     const historyList = document.getElementById('history-list');
     let updateHistory = [];
 
-    // Initialize Ably using token auth
     const ably = new Ably.Realtime({ authUrl: '/api/auth' });
     const channel = ably.channels.get('agent-channel');
 
@@ -454,7 +474,7 @@
     });
 
     // ============================================================
-    // CUSTOM RENDERERS
+    // HELPER FUNCTIONS
     // ============================================================
 
     function getRatingClass(rating) {
@@ -467,13 +487,22 @@
       return '';
     }
 
+    function toArray(val) {
+      if (!val) return [];
+      if (Array.isArray(val)) return val;
+      if (typeof val === 'string') return [val];
+      if (typeof val === 'object') return Object.values(val);
+      return [val];
+    }
+
     function renderList(items) {
-      if (!items || !items.length) return '<p class="field-value">None identified</p>';
-      if (!Array.isArray(items)) {
-        return `<p class="field-value">${items}</p>`;
-      }
+      const arr = toArray(items);
+      if (!arr.length) return '<p class="field-value">None identified</p>';
       return `<ul class="field-list">
-        ${items.map(item => `<li>${typeof item === 'object' ? JSON.stringify(item) : item}</li>`).join('')}
+        ${arr.map(item => {
+          const text = typeof item === 'object' ? JSON.stringify(item) : item;
+          return `<li>${text}</li>`;
+        }).join('')}
       </ul>`;
     }
 
@@ -485,8 +514,9 @@
       } else if (typeof mitre === 'object') {
         items = Object.entries(mitre).map(([k, v]) => `${k}: ${v}`);
       } else {
-        items = [mitre];
+        items = String(mitre).split(',').map(s => s.trim());
       }
+      if (!items.length) return '<p class="field-value">None identified</p>';
       return `<div class="mitre-grid">
         ${items.map(item => `<span class="mitre-tag">${item}</span>`).join('')}
       </div>`;
@@ -497,46 +527,84 @@
       if (typeof evidence === 'string') {
         return `<p class="field-value">${evidence}</p>`;
       }
-
       let html = '<div class="evidence-grid">';
-
       for (const [key, value] of Object.entries(evidence)) {
-        const label = key
-          .replace(/_/g, ' ')
-          .replace(/([A-Z])/g, ' $1')
-          .replace(/^./, s => s.toUpperCase());
-
-        const items = Array.isArray(value) ? value : [value];
+        if (!value || (Array.isArray(value) && !value.length)) continue;
+        const label = key.replace(/_/g, ' ').replace(/^./, s => s.toUpperCase());
+        const items = toArray(value);
         html += `
           <div class="evidence-block">
             <div class="evidence-block-title">${label}</div>
             ${items.map(item => `<div class="ioc-item">${item}</div>`).join('')}
           </div>`;
       }
-
       html += '</div>';
       return html;
     }
 
     function renderThreatActors(actors) {
-      if (!actors) return '<p class="field-value">None identified</p>';
-      const items = Array.isArray(actors) ? actors : [actors];
-      return items.map(a => `<span class="actor-tag">🎭 ${a}</span>`).join('');
+      const arr = toArray(actors);
+      if (!arr.length) return '<p class="field-value">None identified</p>';
+      return arr.map(a => `<span class="actor-tag">🎭 ${a}</span>`).join('');
     }
 
     function renderRecommendations(recs) {
-      if (!recs || !recs.length) return '<p class="field-value">None provided</p>';
-      const items = Array.isArray(recs) ? recs : [recs];
+      const arr = toArray(recs);
+      if (!arr.length) return '<p class="field-value">None provided</p>';
       return `<ol class="rec-list">
-        ${items.map(item => `<li>${item}</li>`).join('')}
+        ${arr.map(item => `<li>${item}</li>`).join('')}
       </ol>`;
     }
 
+    function renderRecommendedActions(actions) {
+      if (!actions) return '';
+      if (Array.isArray(actions)) return renderRecommendations(actions);
+
+      const sections = [
+        { key: 'immediate_24_48_hours', label: '🔴 Immediate (24-48 Hours)', cls: 'critical-rec' },
+        { key: 'immediate_critical_24_48_hours', label: '🔴 Immediate Critical (24-48 Hours)', cls: 'critical-rec' },
+        { key: 'high_priority_7_days', label: '🟡 High Priority (7 Days)', cls: 'high-rec' },
+        { key: 'medium_priority_30_days', label: '🔵 Medium Priority (30 Days)', cls: 'medium-rec' },
+        { key: 'ongoing_continuous', label: '🟢 Ongoing / Continuous', cls: 'ongoing-rec' },
+      ];
+
+      let html = '';
+      sections.forEach(({ key, label, cls }) => {
+        const items = toArray(actions[key]);
+        if (!items.length) return;
+        html += `
+          <div class="rec-section">
+            <div class="rec-section-title ${cls}">${label}</div>
+            <ol class="rec-list">
+              ${items.map(item => `<li>${item}</li>`).join('')}
+            </ol>
+          </div>`;
+      });
+
+      // Render any remaining keys not in our list
+      const handledKeys = sections.map(s => s.key);
+      Object.entries(actions).forEach(([key, value]) => {
+        if (handledKeys.includes(key)) return;
+        const label = key.replace(/_/g, ' ').replace(/^./, s => s.toUpperCase());
+        const items = toArray(value);
+        if (!items.length) return;
+        html += `
+          <div class="rec-section">
+            <div class="rec-section-title">${label}</div>
+            <ol class="rec-list">
+              ${items.map(item => `<li>${item}</li>`).join('')}
+            </ol>
+          </div>`;
+      });
+
+      return html;
+    }
+
     function renderPriorityRisks(risks) {
-      if (!risks) return '';
-      const items = Array.isArray(risks) ? risks : [risks];
+      const arr = toArray(risks);
+      if (!arr.length) return '';
       return `<ul class="priority-list">
-        ${items.map(item => {
+        ${arr.map(item => {
           const text = typeof item === 'string' ? item : JSON.stringify(item);
           const ratingClass = getRatingClass(text);
           return `<li class="priority-item ${ratingClass}">${text}</li>`;
@@ -544,18 +612,22 @@
       </ul>`;
     }
 
+    // ============================================================
+    // SECTION RENDERERS
+    // ============================================================
+
     function renderExecutiveSummary(exec) {
       if (!exec) return '';
 
-      // Get all possible field names Claude might use
-      const timestamp = exec.analysis_timestamp || exec.analysis_date || 
-                        exec.analysis_date_time || exec.timestamp || '';
-      const published = exec.report_published || exec.published || 
-                        exec.date_published || '';
-      const overview = exec.overview || exec.summary || 
-                       exec.description || '';
-      const priorities = exec.highest_priority_risks || exec.priority_risks || 
-                         exec.key_findings || exec.priorities || [];
+      const timestamp = exec.analysis_timestamp || exec.analysis_date ||
+                        exec.analysis_date_time || exec.timestamp ||
+                        exec.report_date || '';
+      const published = exec.report_published || exec.published ||
+                        exec.date_published || exec.report_time || '';
+      const overview = exec.overview || exec.summary || exec.description || '';
+      const priorities = exec.highest_priority_risks || exec.priority_risks ||
+                         exec.priorities || [];
+      const keyFindings = exec.key_findings || exec.findings || [];
 
       return `
         <div class="section-card">
@@ -577,20 +649,28 @@
             <p class="overview-text">${overview}</p>
           ` : ''}
 
-          ${priorities && (Array.isArray(priorities) ? priorities.length > 0 : priorities) ? `
+          ${toArray(priorities).length ? `
             <div class="field-label">Highest Priority Risks</div>
             ${renderPriorityRisks(priorities)}
+          ` : ''}
+
+          ${toArray(keyFindings).length ? `
+            <div class="field-label">Key Findings</div>
+            ${renderList(keyFindings)}
           ` : ''}
         </div>`;
     }
 
     function renderRiskFinding(risk, index) {
+      // Handle both nested and flat structures
       const title = risk.risk_title || risk.title || `Risk Finding ${index + 1}`;
       const rating = risk.rating || risk.severity || risk.risk_rating || '';
       const ratingClass = getRatingClass(rating);
       const description = risk.description || risk.details || '';
-      const actors = risk.threat_actors || risk.actors || risk.adversaries || [];
-      const mitre = risk.mitre_attack || risk.mitre || risk.attack_techniques || [];
+      const actors = risk.threat_actors || risk.threat_actor ||
+                     risk.actors || risk.adversaries || [];
+      const mitre = risk.mitre_attack || risk.mitre ||
+                    risk.mitre_attack_techniques || risk.attack_techniques || [];
       const evidence = risk.evidence || risk.indicators || null;
       const impact = risk.organizational_impact || risk.impact || '';
       const recs = risk.recommendations || risk.remediation || [];
@@ -603,17 +683,17 @@
           </div>
           <hr class="risk-divider"/>
 
-          ${actors && (Array.isArray(actors) ? actors.length > 0 : actors) ? `
+          ${toArray(actors).length ? `
             <div class="field-label">🎭 Threat Actors</div>
             <div style="margin-bottom: 8px;">${renderThreatActors(actors)}</div>
           ` : ''}
 
           ${description ? `
             <div class="field-label">📝 Description</div>
-            <p class="field-value">${description}</p>
+            <p class="field-value" style="margin-bottom:8px">${description}</p>
           ` : ''}
 
-          ${mitre && (Array.isArray(mitre) ? mitre.length > 0 : mitre) ? `
+          ${toArray(mitre).length ? `
             <div class="field-label">🎯 MITRE ATT&CK</div>
             <div style="margin-bottom: 8px;">${renderMitre(mitre)}</div>
           ` : ''}
@@ -625,94 +705,125 @@
 
           ${impact ? `
             <div class="field-label">💥 Organizational Impact</div>
-            <p class="field-value">${impact}</p>
+            <p class="field-value" style="margin-bottom:8px">${impact}</p>
           ` : ''}
 
-          ${recs && (Array.isArray(recs) ? recs.length > 0 : recs) ? `
+          ${toArray(recs).length ? `
             <div class="field-label">✅ Recommendations</div>
             ${renderRecommendations(recs)}
           ` : ''}
         </div>`;
     }
 
+    // ============================================================
+    // MAIN REPORT RENDERER
+    // ============================================================
+
     function renderReport(data) {
       let html = '';
 
-      // 1. Executive Summary
-      const exec = data.executive_summary || data.exec_summary || 
-                   data.summary || null;
-      if (exec) {
-        html += renderExecutiveSummary(exec);
+      // 1. Executive Summary — always first
+      const execKeys = ['executive_summary', 'exec_summary', 'summary'];
+      const execKey = execKeys.find(k => data[k]);
+      if (execKey) {
+        html += renderExecutiveSummary(data[execKey]);
       }
 
       // 2. Risk Findings
-      const risks = data.risk_findings || data.risks || 
-                    data.findings || [];
-      if (risks && risks.length > 0) {
-        html += `<div class="section-card">
-          <div class="section-title">🚨 Risk Findings (${risks.length})</div>`;
-        risks.forEach((risk, i) => {
-          html += renderRiskFinding(risk, i);
-        });
-        html += `</div>`;
+      const riskKeys = ['risk_findings', 'risks', 'findings', 'risk_assessment'];
+      const riskKey = riskKeys.find(k => data[k] && toArray(data[k]).length);
+      if (riskKey) {
+        const risks = toArray(data[riskKey]);
+        html += `
+          <div class="section-card">
+            <div class="section-title">🚨 Risk Findings (${risks.length})</div>
+            ${risks.map((risk, i) => renderRiskFinding(risk, i)).join('')}
+          </div>`;
       }
 
       // 3. Threat Actors
-      const actors = data.threat_actors || data.adversaries || [];
-      if (actors && actors.length > 0) {
+      const actorKeys = ['threat_actors', 'adversaries', 'actors'];
+      const actorKey = actorKeys.find(k => data[k] && toArray(data[k]).length);
+      if (actorKey) {
         html += `
           <div class="section-card">
             <div class="section-title">🎭 Threat Actors</div>
-            <div>${renderThreatActors(actors)}</div>
+            <div>${renderThreatActors(data[actorKey])}</div>
           </div>`;
       }
 
       // 4. MITRE ATT&CK Summary
-      const mitre = data.mitre_attack_summary || data.mitre_attack || 
-                    data.mitre || null;
-      if (mitre && (Array.isArray(mitre) ? mitre.length > 0 : Object.keys(mitre).length > 0)) {
+      const mitreKeys = ['mitre_attack_summary', 'mitre_attack', 'mitre', 'attack_summary'];
+      const mitreKey = mitreKeys.find(k => data[k] && toArray(data[k]).length);
+      if (mitreKey) {
         html += `
           <div class="section-card">
             <div class="section-title">🎯 MITRE ATT&CK Summary</div>
-            ${renderMitre(mitre)}
+            ${renderMitre(data[mitreKey])}
           </div>`;
       }
 
-      // 5. Fallback — render any remaining top level fields
-      // that weren't handled above
-      const handledKeys = [
-        'executive_summary', 'exec_summary', 'summary',
-        'risk_findings', 'risks', 'findings',
-        'threat_actors', 'adversaries',
-        'mitre_attack_summary', 'mitre_attack', 'mitre'
-      ];
+      // 5. Recommended Actions
+      const actionKeys = ['recommended_actions', 'recommendations', 'action_plan'];
+      const actionKey = actionKeys.find(k => data[k]);
+      if (actionKey) {
+        html += `
+          <div class="section-card">
+            <div class="section-title">✅ Recommended Actions</div>
+            ${renderRecommendedActions(data[actionKey])}
+          </div>`;
+      }
 
-      const remainingKeys = Object.keys(data).filter(k => !handledKeys.includes(k));
-      if (remainingKeys.length > 0) {
+      // 6. Indicators of Compromise
+      const iocKeys = ['indicators_of_compromise', 'iocs', 'indicators'];
+      const iocKey = iocKeys.find(k => data[k]);
+      if (iocKey) {
+        html += `
+          <div class="section-card">
+            <div class="section-title">🔬 Indicators of Compromise</div>
+            ${renderEvidence(data[iocKey])}
+          </div>`;
+      }
+
+      // 7. Assessment Metadata — always last
+      const metaKeys = ['assessment_metadata', 'metadata', 'report_metadata'];
+      const metaKey = metaKeys.find(k => data[k]);
+      if (metaKey) {
+        const meta = data[metaKey];
         html += `<div class="section-card">
-          <div class="section-title">📊 Additional Information</div>`;
-        remainingKeys.forEach(key => {
-          const label = key
-            .replace(/_/g, ' ')
-            .replace(/([A-Z])/g, ' $1')
-            .replace(/^./, s => s.toUpperCase());
-          const value = data[key];
+          <div class="section-title">📊 Assessment Metadata</div>`;
+        for (const [key, value] of Object.entries(meta)) {
+          const label = key.replace(/_/g, ' ').replace(/^./, s => s.toUpperCase());
           html += `<div class="field-label">${label}</div>`;
           if (Array.isArray(value)) {
             html += renderList(value);
           } else if (typeof value === 'object') {
-            html += `<pre style="color:#c0c0c0; font-size:0.85rem; overflow-x:auto">${JSON.stringify(value, null, 2)}</pre>`;
+            html += renderEvidence(value);
           } else {
             html += `<p class="field-value">${value}</p>`;
           }
-        });
+        }
         html += `</div>`;
+      }
+
+      // 8. Analyst Notes — always last
+      const noteKeys = ['analyst_notes', 'notes', 'analyst_note', 'analysis_notes'];
+      const noteKey = noteKeys.find(k => data[k]);
+      if (noteKey) {
+        html += `
+          <div class="section-card">
+            <div class="section-title">📝 Analyst Notes</div>
+            <p class="overview-text">${data[noteKey]}</p>
+          </div>`;
       }
 
       return html || '<p style="color:#444">No data to display</p>';
     }
 
-    // Listen for agent updates
+    // ============================================================
+    // ABLY MESSAGE HANDLER
+    // ============================================================
+
     channel.subscribe('agent-update', (message) => {
       let data = message.data;
       if (typeof data === 'string') {
@@ -723,7 +834,6 @@
       statusText.textContent = 'Receiving update...';
       outputContainer.classList.add('updating');
 
-      // Save to history
       if (outputContent.innerText.trim() &&
           !outputContent.innerText.includes('Waiting')) {
         updateHistory.unshift({
@@ -739,10 +849,9 @@
           const parsed = typeof data.content === 'object'
             ? data.content
             : JSON.parse(data.content);
-
           outputContent.innerHTML = DOMPurify.sanitize(renderReport(parsed));
         } catch (e) {
-          outputContent.innerHTML = `<pre style="color:#c0c0c0">${JSON.stringify(data.content, null, 2)}</pre>`;
+          outputContent.innerHTML = `<pre style="color:#c0c0c0; overflow-x:auto">${JSON.stringify(data.content, null, 2)}</pre>`;
         }
 
         const d = new Date(data.timestamp);
