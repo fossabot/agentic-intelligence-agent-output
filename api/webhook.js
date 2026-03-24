@@ -1,13 +1,11 @@
 const Pusher = require('pusher');
 
-// Tell Vercel NOT to pre-parse the body
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-// Helper to read raw body from request
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
     let data = '';
@@ -34,20 +32,19 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  // Read and parse raw body manually
   let content, type;
 
   try {
     const rawBody = await getRawBody(req);
-    console.log('Raw body received:', rawBody);
-    
+    console.log('Raw body received:', rawBody.substring(0, 500));
+
     const parsed = JSON.parse(rawBody);
     content = parsed.content;
     type = parsed.type;
 
   } catch (parseError) {
     console.error('Body parse error:', parseError.message);
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: 'Could not parse body',
       details: parseError.message
     });
@@ -69,7 +66,7 @@ module.exports = async function handler(req, res) {
   try {
     await pusher.trigger('agent-channel', 'agent-update', {
       content: content,
-      type: type || 'html',
+      type: type || 'json',
       timestamp: new Date().toISOString()
     });
 
