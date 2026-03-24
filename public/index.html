@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Agentic Intelligence Agent's Live Output</title>
+  <title>Intelligence Analyst Agent</title>
   <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
   <style>
@@ -122,6 +122,26 @@
 
     #output-content th { background: #2a2d3a; color: #fff; }
 
+    .json-label {
+      color: #a78bfa;
+      font-weight: bold;
+    }
+
+    .json-value {
+      color: #c0c0c0;
+      margin-left: 8px;
+    }
+
+    .json-section {
+      margin-bottom: 16px;
+    }
+
+    .json-nested {
+      padding-left: 16px;
+      border-left: 2px solid #2a2d3a;
+      margin-top: 8px;
+    }
+
     .history-section { margin-top: 24px; }
 
     .history-section h3 {
@@ -146,7 +166,7 @@
 <body>
 
   <header>
-    <h1>🛡️🤖 Agentic Intelligence Agent's Live Output 🔎📊</h1>
+    <h1>🔍 Intelligence Analyst Agent</h1>
     <div id="status-indicator">
       <div id="status-dot"></div>
       <span id="status-text">Connecting...</span>
@@ -202,6 +222,56 @@
       statusText.textContent = 'Connection error';
     });
 
+    // Render JSON object as formatted HTML
+    function renderJSON(data) {
+      if (typeof data !== 'object' || data === null) {
+        return `<p>${data}</p>`;
+      }
+
+      let html = '';
+
+      for (const [key, value] of Object.entries(data)) {
+        // Format key to Title Case
+        const label = key
+          .replace(/_/g, ' ')
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/^./, str => str.toUpperCase());
+
+        if (Array.isArray(value)) {
+          // Render arrays as bullet lists
+          html += `
+            <div class="json-section">
+              <span class="json-label">${label}:</span>
+              <ul style="margin-top: 8px;">
+                ${value.map(item =>
+                  typeof item === 'object'
+                    ? `<li><div class="json-nested">${renderJSON(item)}</div></li>`
+                    : `<li>${item}</li>`
+                ).join('')}
+              </ul>
+            </div>`;
+        } else if (typeof value === 'object' && value !== null) {
+          // Render nested objects recursively
+          html += `
+            <div class="json-section">
+              <span class="json-label">${label}:</span>
+              <div class="json-nested">
+                ${renderJSON(value)}
+              </div>
+            </div>`;
+        } else {
+          // Render simple key/value pairs
+          html += `
+            <div class="json-section">
+              <span class="json-label">${label}:</span>
+              <span class="json-value">${value}</span>
+            </div>`;
+        }
+      }
+
+      return html;
+    }
+
     channel.bind('agent-update', (data) => {
       statusDot.className = 'receiving';
       statusText.textContent = 'Receiving update...';
@@ -220,19 +290,23 @@
 
       setTimeout(() => {
         if (data.type === 'html') {
+          // Sanitize and inject HTML directly
           outputContent.innerHTML = DOMPurify.sanitize(data.content);
+
         } else if (data.type === 'json') {
-  try {
-    // Handle if content is already an object or still a string
-    const parsed = typeof data.content === 'object' 
-      ? data.content 
-      : JSON.parse(data.content);
-    
-    outputContent.innerHTML = renderJSON(parsed);
-  } catch {
-    outputContent.innerHTML = `<pre><code>${data.content}</code></pre>`;
-  }
-}
+          try {
+            // Handle if content is already an object or still a string
+            const parsed = typeof data.content === 'object'
+              ? data.content
+              : JSON.parse(data.content);
+
+            outputContent.innerHTML = renderJSON(parsed);
+          } catch (e) {
+            // Fallback to raw display if parsing fails
+            outputContent.innerHTML = `<pre><code>${data.content}</code></pre>`;
+          }
+        }
+
         const d = new Date(data.timestamp);
         timestampEl.textContent =
           `Last updated: ${d.toLocaleTimeString()} on ${d.toLocaleDateString()}`;
