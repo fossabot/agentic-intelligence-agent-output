@@ -190,10 +190,9 @@
 
   <script>
     // ============================================================
-    // REPLACE THIS with your actual Ably API key
-    // ============================================================
-    const ABLY_KEY = '';
-    // ============================================================
+    const ably = new Ably.Realtime({
+      authUrl: '/api/auth'
+    });
 
     const statusDot = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
@@ -204,7 +203,6 @@
     let updateHistory = [];
 
     // Initialize Ably
-    const ably = new Ably.Realtime(ABLY_KEY);
     const channel = ably.channels.get('agent-channel');
 
     // Connection status handlers
