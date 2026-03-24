@@ -1,4 +1,4 @@
-const Ably = require('ably');
+const https = require('https');
 
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -98,6 +98,62 @@ function extractAndCleanJSON(str) {
   return JSON.parse(result);
 }
 
+// Publish to Ably using direct REST API call
+function publishToAbly(apiKey, channelName, eventName, data) {
+  return new Promise((resolve, reject) => {
+    const keyParts = apiKey.split(':');
+    const keyId = keyParts[0];
+    const keySecret = keyParts[1];
+    const credentials = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+
+    const payload = JSON.stringify({
+      name: eventName,
+      data: JSON.stringify(data)
+    });
+
+    console.log('Publishing to Ably REST API...');
+    console.log('Channel:', channelName);
+    console.log('Event:', eventName);
+    console.log('Payload size:', payload.length, 'bytes');
+
+    const options = {
+      hostname: 'rest.ably.io',
+      port: 443,
+      path: `/channels/${encodeURIComponent(channelName)}/messages`,
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let responseData = '';
+      res.on('data', (chunk) => {
+        responseData += chunk;
+      });
+      res.on('end', () => {
+        console.log('Ably REST response status:', res.statusCode);
+        console.log('Ably REST response:', responseData);
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(responseData);
+        } else {
+          reject(new Error(`Ably REST API error: ${res.statusCode} ${responseData}`));
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      console.error('Ably REST request error:', err.message);
+      reject(err);
+    });
+
+    req.write(payload);
+    req.end();
+  });
+}
+
 module.exports = async function handler(req, res) {
 
   // Only allow POST requests
@@ -119,20 +175,18 @@ module.exports = async function handler(req, res) {
     const rawBody = await getRawBody(req);
     console.log('Raw body received:', rawBody.substring(0, 500));
 
-    // Parse the outer JSON wrapper directly
+    // Parse the outer JSON wrapper
     let outerParsed;
     try {
       outerParsed = JSON.parse(rawBody);
       console.log('Outer wrapper parsed successfully');
     } catch {
-      // Clean control characters and retry
       console.log('Outer parse failed, cleaning and retrying');
       const cleaned = rawBody
         .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
       outerParsed = JSON.parse(cleaned);
     }
 
-    // Get content and type from parsed wrapper
     const rawContent = outerParsed.content;
     type = outerParsed.type || 'json';
 
@@ -146,12 +200,10 @@ module.exports = async function handler(req, res) {
       throw new Error('No content field in body');
     }
 
-    // If content is already an object use it directly
     if (typeof rawContent === 'object') {
       content = rawContent;
       console.log('Content is already an object');
     } else {
-      // Content is a string — extract and clean JSON from it
       content = extractAndCleanJSON(rawContent);
     }
 
@@ -169,23 +221,25 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'No content provided' });
   }
 
-  // Initialize Ably
-  const ably = new Ably.Rest({ key: process.env.ABLY_API_KEY });
-  const channel = ably.channels.get('agent-channel');
-
   try {
-    console.log('Publishing to channel: agent-channel, event: agent-update');
-    await channel.publish('agent-update', {
+    const messageData = {
       content: content,
       type: type || 'json',
       timestamp: new Date().toISOString()
-    });
+    };
 
-    console.log(`Webhook received and published at ${new Date().toISOString()}`);
+    await publishToAbly(
+      process.env.ABLY_API_KEY,
+      'agent-channel',
+      'agent-update',
+      messageData
+    );
+
+    console.log(`Successfully published at ${new Date().toISOString()}`);
     return res.status(200).json({ success: true });
 
   } catch (error) {
-    console.error('Ably error:', error.message);
+    console.error('Publish error:', error.message);
     return res.status(500).json({ error: error.message });
   }
 };
