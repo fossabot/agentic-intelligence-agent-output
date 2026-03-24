@@ -11,34 +11,18 @@ function getRawBody(req) {
   });
 }
 
-// Clean and parse JSON from any string
-function extractAndCleanJSON(str) {
-  console.log('Extracting JSON from:', str.substring(0, 200));
+// Clean a raw JSON string by fixing control characters
+// and newlines inside string values
+function cleanJSONString(str) {
+  // Remove bad control characters
+  str = str.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
 
-  // Step 1: Try parsing directly first
-  try {
-    const direct = JSON.parse(str.trim());
-    console.log('Direct JSON parse succeeded');
-    return direct;
-  } catch {
-    // Not clean JSON, continue
-  }
-
-  // Step 2: Remove markdown code blocks
+  // Remove markdown code blocks
   str = str
     .replace(/```json\n?/gi, '')
     .replace(/```\n?/gi, '');
 
-  // Step 3: Try parsing again after removing markdown
-  try {
-    const afterMarkdown = JSON.parse(str.trim());
-    console.log('JSON parse succeeded after markdown removal');
-    return afterMarkdown;
-  } catch {
-    // Still not clean, continue
-  }
-
-  // Step 4: Find the first { and last }
+  // Find the first { and last }
   const firstBrace = str.indexOf('{');
   const lastBrace = str.lastIndexOf('}');
 
@@ -48,10 +32,8 @@ function extractAndCleanJSON(str) {
 
   str = str.substring(firstBrace, lastBrace + 1);
 
-  // Step 5: Remove bad control characters
-  str = str.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
-
-  // Step 6: Fix newlines and tabs inside string values
+  // Fix newlines and tabs inside string values
+  // character by character
   let result = '';
   let inString = false;
   let escaped = false;
@@ -87,15 +69,14 @@ function extractAndCleanJSON(str) {
       }
     } else {
       if (char === '\n' || char === '\r' || char === '\t' || char === ' ') {
-        // skip
+        // skip whitespace outside strings
       } else {
         result += char;
       }
     }
   }
 
-  console.log('Cleaned JSON string:', result.substring(0, 200));
-  return JSON.parse(result);
+  return result;
 }
 
 // Publish to Ably using direct REST API call
@@ -133,7 +114,6 @@ function publishToAbly(apiKey, channelName, eventName, data) {
       });
       res.on('end', () => {
         console.log('Ably REST response status:', res.statusCode);
-        console.log('Ably REST response:', responseData);
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(responseData);
         } else {
@@ -172,97 +152,123 @@ module.exports = async function handler(req, res) {
   try {
     const rawBody = await getRawBody(req);
     console.log('Raw body received:', rawBody.substring(0, 500));
-    console.log('Total raw body length:', rawBody.length);
+    console.log('Total body length:', rawBody.length);
 
-    // Step 1: Extract type
-    const typeMatch = rawBody.match(/"type"\s*:\s*"([^"]+)"/);
-    type = typeMatch ? typeMatch[1] : 'json';
-    console.log('Type:', type);
+    // APPROACH: Clean the entire raw body first
+    // then parse the outer wrapper
+    // then extract and clean Claude's JSON from content
 
-    // Step 2: Find where Claude's JSON starts in the raw body
-    // Look for the LAST occurrence of { before the closing of the outer JSON
-    // Claude's JSON will be the largest JSON object in the string
-    
-    // Find all { positions in the raw body
-    const allBraces = [];
-    for (let i = 0; i < rawBody.length; i++) {
-      if (rawBody[i] === '{') {
-        allBraces.push(i);
+    // Step 1: Clean the entire raw body of control characters
+    // but preserve the structure
+    const bodyNoControlChars = rawBody
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+
+    // Step 2: Try to parse outer wrapper directly
+    // This works when content is clean (Reqbin tests)
+    try {
+      const outerParsed = JSON.parse(bodyNoControlChars);
+      console.log('Outer wrapper parsed directly');
+      
+      type = outerParsed.type || 'json';
+      const rawContent = outerParsed.content;
+
+      if (!rawContent) {
+        throw new Error('No content field in body');
       }
-    }
-    console.log('Found', allBraces.length, 'opening braces');
 
-    // Find the last } in the raw body before the outer closing
-    // The outer JSON ends with }\n or just }
-    // Claude's JSON will be the content between the first { after "content": 
-    // and the last } before the outer wrapper closes
-
-    // Find position of "content": in raw body
-    const contentKeyPos = rawBody.indexOf('"content"');
-    console.log('Content key position:', contentKeyPos);
-
-    // Find the first { that appears after some text following "content":
-    // This is where Claude's JSON begins
-    let claudeJsonStart = -1;
-    for (let i = contentKeyPos; i < rawBody.length; i++) {
-      if (rawBody[i] === '{') {
-        // Skip the outer wrapper's { if it's right at the start
-        if (i > 5) {
-          claudeJsonStart = i;
-          break;
+      // Content is already a parsed object
+      if (typeof rawContent === 'object') {
+        content = rawContent;
+        console.log('Content is already an object');
+      } else {
+        // Content is a string - try to parse it as JSON
+        try {
+          content = JSON.parse(rawContent);
+          console.log('Content parsed directly as JSON');
+        } catch {
+          // Content has extra text - extract JSON from it
+          console.log('Content has extra text, extracting JSON...');
+          const cleaned = cleanJSONString(rawContent);
+          content = JSON.parse(cleaned);
+          console.log('Content extracted and cleaned successfully');
         }
       }
+
+    } catch (outerParseError) {
+      // Step 3: Outer wrapper parse failed
+      // This means Claude's response has unescaped characters
+      // that break the outer JSON
+      // Solution: manually split the body to get the content value
+      console.log('Outer parse failed:', outerParseError.message);
+      console.log('Attempting manual content extraction...');
+
+      // Extract type
+      const typeMatch = bodyNoControlChars.match(/"type"\s*:\s*"([^"]+)"/);
+      type = typeMatch ? typeMatch[1] : 'json';
+
+      // The raw body looks like:
+      // {"content": "CLAUDE_TEXT_HERE {JSON_HERE}", "type": "json"}
+      // We need to find Claude's JSON directly in the raw body
+      // by finding the FIRST { that is part of Claude's JSON
+      // (not the outer wrapper's {)
+
+      // Find the position right after "content": "
+      const contentKeyPos = bodyNoControlChars.indexOf('"content"');
+      const colonPos = bodyNoControlChars.indexOf(':', contentKeyPos);
+      const openQuotePos = bodyNoControlChars.indexOf('"', colonPos + 1);
+      
+      // Everything from openQuotePos+1 is Claude's raw response
+      // Find the first { in Claude's response
+      const claudeResponseStart = openQuotePos + 1;
+      const firstBraceInClaude = bodyNoControlChars.indexOf('{', claudeResponseStart);
+      
+      console.log('Claude response starts at:', claudeResponseStart);
+      console.log('First { in Claude response at:', firstBraceInClaude);
+
+      if (firstBraceInClaude === -1) {
+        throw new Error('No JSON found in Claude response');
+      }
+
+      // Now find the end of Claude's JSON
+      // We need to find the matching } by counting braces
+      let braceCount = 0;
+      let claudeJsonEnd = -1;
+
+      for (let i = firstBraceInClaude; i < bodyNoControlChars.length; i++) {
+        const char = bodyNoControlChars[i];
+        
+        if (char === '{') braceCount++;
+        if (char === '}') {
+          braceCount--;
+          if (braceCount === 0) {
+            claudeJsonEnd = i;
+            break;
+          }
+        }
+      }
+
+      console.log('Claude JSON ends at:', claudeJsonEnd);
+
+      if (claudeJsonEnd === -1) {
+        throw new Error('Could not find end of Claude JSON');
+      }
+
+      // Extract Claude's JSON
+      const claudeRawJSON = bodyNoControlChars.substring(
+        firstBraceInClaude, 
+        claudeJsonEnd + 1
+      );
+      
+      console.log('Claude raw JSON length:', claudeRawJSON.length);
+      console.log('Claude raw JSON preview:', claudeRawJSON.substring(0, 200));
+
+      // Clean and parse it
+      const cleaned = cleanJSONString(claudeRawJSON);
+      content = JSON.parse(cleaned);
+      console.log('Successfully extracted and parsed Claude JSON');
     }
 
-    // Actually find the { that is Claude's JSON
-    // It comes after "content": "some text {
-    // Find the position after "content": "
-    const contentValueStart = rawBody.indexOf('"content"');
-    const afterContentColon = rawBody.indexOf(':', contentValueStart) + 1;
-    const afterContentQuote = rawBody.indexOf('"', afterContentColon) + 1;
-    
-    console.log('Content value starts at position:', afterContentQuote);
-    
-    // Now find the first { after the content opening quote
-    claudeJsonStart = rawBody.indexOf('{', afterContentQuote);
-    console.log('Claude JSON starts at position:', claudeJsonStart);
-
-    if (claudeJsonStart === -1) {
-      throw new Error('No JSON found in Claude response');
-    }
-
-    // Find the matching last } 
-    // We need to find the last } that is part of Claude's JSON
-    // not the outer wrapper's }
-    // The outer wrapper ends with: }\n} or just }}
-    // So we want everything from claudeJsonStart to the second-to-last }
-    
-    // Find the last } in the entire raw body
-    let lastBrace = rawBody.lastIndexOf('}');
-    
-    // Step back to find Claude's closing }
-    // The outer wrapper has its own closing }
-    // So Claude's JSON ends at the } before the outer wrapper's }
-    let claudeJsonEnd = lastBrace;
-    
-    // Check if there's another } close to the end
-    // that belongs to the outer wrapper
-    const afterClaudeJson = rawBody.substring(claudeJsonEnd + 1).trim();
-    if (afterClaudeJson === '}' || afterClaudeJson === '}\n' || afterClaudeJson.startsWith('}')) {
-      // The last } is the outer wrapper, go back one more
-      claudeJsonEnd = rawBody.lastIndexOf('}', claudeJsonEnd - 1);
-    }
-
-    console.log('Claude JSON ends at position:', claudeJsonEnd);
-
-    // Extract Claude's raw JSON string
-    const claudeRawJSON = rawBody.substring(claudeJsonStart, claudeJsonEnd + 1);
-    console.log('Claude raw JSON length:', claudeRawJSON.length);
-    console.log('Claude raw JSON start:', claudeRawJSON.substring(0, 200));
-
-    // Now clean and parse Claude's JSON
-    content = extractAndCleanJSON(claudeRawJSON);
-    console.log('Successfully parsed content');
+    console.log('Content ready, type:', type);
 
   } catch (parseError) {
     console.error('Body parse error:', parseError.message);
