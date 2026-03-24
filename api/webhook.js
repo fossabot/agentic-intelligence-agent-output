@@ -161,14 +161,70 @@ function extractClaudeJSON(rawBody) {
     .replace(/```\n?/gi, '');
 
   // Step 8: Parse it
+  // Step 8: Parse it
   try {
     const parsed = JSON.parse(noMarkdown);
     console.log('Claude JSON parsed successfully');
     return { content: parsed, type };
   } catch (e) {
     console.error('Final parse error:', e.message);
-    console.error('Failed JSON preview:', noMarkdown.substring(0, 500));
-    throw new Error(`Could not parse Claude JSON: ${e.message}`);
+    
+    // Log the area around the error position
+    const errorMatch = e.message.match(/position (\d+)/);
+    if (errorMatch) {
+      const pos = parseInt(errorMatch[1]);
+      console.error('Error context:', noMarkdown.substring(
+        Math.max(0, pos - 100), 
+        Math.min(noMarkdown.length, pos + 100)
+      ));
+      console.error('Total JSON length:', noMarkdown.length);
+      console.error('Last 200 chars:', noMarkdown.substring(noMarkdown.length - 200));
+    }
+
+    // Attempt auto-repair
+    // Sometimes Claude's JSON is truncated mid-array or mid-object
+    // Try to close any open brackets/braces
+    console.log('Attempting JSON auto-repair...');
+    
+    let repaired = noMarkdown;
+    
+    // Count open vs closed braces and brackets
+    let openBraces = 0;
+    let openBrackets = 0;
+    let inStr = false;
+    let esc = false;
+
+    for (let i = 0; i < repaired.length; i++) {
+      const char = repaired[i];
+      
+      if (esc) { esc = false; continue; }
+      if (char === '\\' && inStr) { esc = true; continue; }
+      if (char === '"') { inStr = !inStr; continue; }
+      
+      if (!inStr) {
+        if (char === '{') openBraces++;
+        if (char === '}') openBraces--;
+        if (char === '[') openBrackets++;
+        if (char === ']') openBrackets--;
+      }
+    }
+
+    console.log('Open braces:', openBraces, 'Open brackets:', openBrackets);
+
+    // Close any unclosed arrays first then objects
+    for (let i = 0; i < openBrackets; i++) repaired += ']';
+    for (let i = 0; i < openBraces; i++) repaired += '}';
+
+    console.log('Repaired JSON last 100 chars:', repaired.substring(repaired.length - 100));
+
+    try {
+      const repairedParsed = JSON.parse(repaired);
+      console.log('Auto-repair succeeded!');
+      return { content: repairedParsed, type };
+    } catch (repairError) {
+      console.error('Auto-repair failed:', repairError.message);
+      throw new Error(`Could not parse Claude JSON: ${e.message}`);
+    }
   }
 }
 
