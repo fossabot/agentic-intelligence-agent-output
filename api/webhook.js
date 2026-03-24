@@ -174,6 +174,7 @@ module.exports = async function handler(req, res) {
   const channel = ably.channels.get('agent-channel');
 
   try {
+    console.log('Publishing to channel: agent-channel, event: agent-update');
     await channel.publish('agent-update', {
       content: content,
       type: type || 'json',
