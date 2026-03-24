@@ -11,7 +11,7 @@ function getRawBody(req) {
   });
 }
 
-// Fix newlines and tabs inside JSON string values
+// Fix literal newlines and tabs inside JSON string values
 function fixJSONStringValues(str) {
   let result = '';
   let inString = false;
@@ -39,7 +39,6 @@ function fixJSONStringValues(str) {
     }
 
     if (inString) {
-      // Inside string — replace literal newlines/tabs with space
       if (char === '\n' || char === '\r') {
         result += ' ';
       } else if (char === '\t') {
@@ -48,7 +47,6 @@ function fixJSONStringValues(str) {
         result += char;
       }
     } else {
-      // Outside string — keep as is
       result += char;
     }
   }
@@ -56,176 +54,125 @@ function fixJSONStringValues(str) {
   return result;
 }
 
-// Extract Claude's JSON from the full raw body
-function extractClaudeJSON(rawBody) {
-  console.log('Starting Claude JSON extraction...');
-  console.log('Total body length:', rawBody.length);
+// Find the end of a JSON object/array starting at startPos
+// Uses a more robust approach that handles edge cases
+function findJSONEnd(str, startPos) {
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  let lastValidEnd = -1;
 
-  // Step 1: Remove all bad control characters from entire body
-  let cleaned = rawBody
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+  for (let i = startPos; i < str.length; i++) {
+    const char = str[i];
+    const code = str.charCodeAt(i);
 
-  // Step 2: Fix literal newlines and tabs inside string values
-  cleaned = fixJSONStringValues(cleaned);
-  console.log('Body cleaned, length:', cleaned.length);
-
-  // Step 3: Try parsing the whole thing as JSON directly
-  try {
-    const parsed = JSON.parse(cleaned);
-    console.log('Full body parsed directly');
-    return {
-      content: parsed.content,
-      type: parsed.type || 'json'
-    };
-  } catch {
-    console.log('Full body parse failed, extracting manually...');
-  }
-
-  // Step 4: Extract type
-  const typeMatch = cleaned.match(/"type"\s*:\s*"([^"]+)"/);
-  const type = typeMatch ? typeMatch[1] : 'json';
-
-  // Step 5: Find where Claude's JSON starts
-  // Find "content": then find the first { after it
-  const contentKeyPos = cleaned.indexOf('"content"');
-  if (contentKeyPos === -1) {
-    throw new Error('No content field found');
-  }
-
-  const colonPos = cleaned.indexOf(':', contentKeyPos);
-  const openQuotePos = cleaned.indexOf('"', colonPos + 1);
-  const claudeTextStart = openQuotePos + 1;
-
-  // Find first { in Claude's response
-  const firstBrace = cleaned.indexOf('{', claudeTextStart);
-  if (firstBrace === -1) {
-    throw new Error('No JSON object found in Claude response');
-  }
-
-  console.log('Claude JSON starts at:', firstBrace);
-
-  // Step 6: Find the end of Claude's JSON by counting braces
-  // Now that we have cleaned the string this should work correctly
-  let braceCount = 0;
-  let claudeJsonEnd = -1;
-  let inStr = false;
-  let esc = false;
-
-  for (let i = firstBrace; i < cleaned.length; i++) {
-    const char = cleaned[i];
-
-    // Track escape sequences
-    if (esc) {
-      esc = false;
+    // Skip non-printable characters that slipped through
+    if (!inString && code < 32 && code !== 9 && code !== 10 && code !== 13) {
       continue;
     }
 
-    if (char === '\\' && inStr) {
-      esc = true;
+    if (escaped) {
+      escaped = false;
       continue;
     }
 
-    // Track string boundaries
+    if (char === '\\' && inString) {
+      escaped = true;
+      continue;
+    }
+
     if (char === '"') {
-      inStr = !inStr;
+      inString = !inString;
       continue;
     }
 
-    // Only count braces outside strings
-    if (!inStr) {
-      if (char === '{') braceCount++;
-      if (char === '}') {
-        braceCount--;
-        if (braceCount === 0) {
-          claudeJsonEnd = i;
-          break;
+    if (!inString) {
+      if (char === '{' || char === '[') {
+        depth++;
+      } else if (char === '}' || char === ']') {
+        depth--;
+        if (depth === 0) {
+          return i;
         }
+        if (depth < 0) {
+          // Something went wrong, return last valid end
+          return lastValidEnd;
+        }
+        lastValidEnd = i;
       }
     }
   }
 
-  console.log('Claude JSON ends at:', claudeJsonEnd);
+  return lastValidEnd;
+}
 
-  if (claudeJsonEnd === -1) {
-    throw new Error('Could not find end of Claude JSON');
-  }
+// Attempt to repair truncated JSON by finding
+// the last complete value and closing open structures
+function repairJSON(str) {
+  console.log('Attempting JSON repair...');
 
-  // Extract Claude's JSON
-  const claudeJSON = cleaned.substring(firstBrace, claudeJsonEnd + 1);
-  console.log('Claude JSON length:', claudeJSON.length);
-  console.log('Claude JSON preview:', claudeJSON.substring(0, 200));
+  // Find all unclosed structures
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  let lastCompletePos = 0;
+  let structureStack = [];
 
-  // Step 7: Remove markdown code blocks if present
-  const noMarkdown = claudeJSON
-    .replace(/```json\n?/gi, '')
-    .replace(/```\n?/gi, '');
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
 
-  // Step 8: Parse it
-  // Step 8: Parse it
-  try {
-    const parsed = JSON.parse(noMarkdown);
-    console.log('Claude JSON parsed successfully');
-    return { content: parsed, type };
-  } catch (e) {
-    console.error('Final parse error:', e.message);
-    
-    // Log the area around the error position
-    const errorMatch = e.message.match(/position (\d+)/);
-    if (errorMatch) {
-      const pos = parseInt(errorMatch[1]);
-      console.error('Error context:', noMarkdown.substring(
-        Math.max(0, pos - 100), 
-        Math.min(noMarkdown.length, pos + 100)
-      ));
-      console.error('Total JSON length:', noMarkdown.length);
-      console.error('Last 200 chars:', noMarkdown.substring(noMarkdown.length - 200));
+    if (escaped) {
+      escaped = false;
+      continue;
     }
 
-    // Attempt auto-repair
-    // Sometimes Claude's JSON is truncated mid-array or mid-object
-    // Try to close any open brackets/braces
-    console.log('Attempting JSON auto-repair...');
-    
-    let repaired = noMarkdown;
-    
-    // Count open vs closed braces and brackets
-    let openBraces = 0;
-    let openBrackets = 0;
-    let inStr = false;
-    let esc = false;
+    if (char === '\\' && inString) {
+      escaped = true;
+      continue;
+    }
 
-    for (let i = 0; i < repaired.length; i++) {
-      const char = repaired[i];
-      
-      if (esc) { esc = false; continue; }
-      if (char === '\\' && inStr) { esc = true; continue; }
-      if (char === '"') { inStr = !inStr; continue; }
-      
-      if (!inStr) {
-        if (char === '{') openBraces++;
-        if (char === '}') openBraces--;
-        if (char === '[') openBrackets++;
-        if (char === ']') openBrackets--;
+    if (char === '"') {
+      inString = !inString;
+      if (!inString) lastCompletePos = i;
+      continue;
+    }
+
+    if (!inString) {
+      if (char === '{') {
+        structureStack.push('}');
+        depth++;
+      } else if (char === '[') {
+        structureStack.push(']');
+        depth++;
+      } else if (char === '}' || char === ']') {
+        structureStack.pop();
+        depth--;
+        lastCompletePos = i;
+      } else if (char === ',' || char === ':') {
+        // Don't update lastCompletePos here
+      } else if (char !== ' ' && char !== '\n' && char !== '\r' && char !== '\t') {
+        // Some other character
       }
     }
-
-    console.log('Open braces:', openBraces, 'Open brackets:', openBrackets);
-
-    // Close any unclosed arrays first then objects
-    for (let i = 0; i < openBrackets; i++) repaired += ']';
-    for (let i = 0; i < openBraces; i++) repaired += '}';
-
-    console.log('Repaired JSON last 100 chars:', repaired.substring(repaired.length - 100));
-
-    try {
-      const repairedParsed = JSON.parse(repaired);
-      console.log('Auto-repair succeeded!');
-      return { content: repairedParsed, type };
-    } catch (repairError) {
-      console.error('Auto-repair failed:', repairError.message);
-      throw new Error(`Could not parse Claude JSON: ${e.message}`);
-    }
   }
+
+  console.log('Structure stack remaining:', structureStack);
+  console.log('Last complete position:', lastCompletePos);
+
+  // If we're inside a string, close it first
+  let repaired = str;
+  if (inString) {
+    repaired += '"';
+    console.log('Closed unclosed string');
+  }
+
+  // Close any open structures in reverse order
+  const closers = structureStack.reverse().join('');
+  repaired += closers;
+  console.log('Added closers:', closers);
+  console.log('Repaired JSON last 150 chars:', repaired.substring(repaired.length - 150));
+
+  return repaired;
 }
 
 // Publish to Ably using direct REST API call
@@ -301,13 +248,134 @@ module.exports = async function handler(req, res) {
   try {
     const rawBody = await getRawBody(req);
     console.log('Raw body received:', rawBody.substring(0, 300));
+    console.log('Total body length:', rawBody.length);
 
-    const extracted = extractClaudeJSON(rawBody);
-    content = extracted.content;
-    type = extracted.type;
+    // Step 1: Remove bad control characters
+    let cleaned = rawBody
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
 
-    console.log('Content ready, type:', type);
-    console.log('Content keys:', Object.keys(content).join(', '));
+    // Step 2: Fix literal newlines inside string values
+    cleaned = fixJSONStringValues(cleaned);
+    console.log('Body cleaned, length:', cleaned.length);
+
+    // Step 3: Try parsing entire body as JSON directly
+    try {
+      const parsed = JSON.parse(cleaned);
+      console.log('Full body parsed directly');
+      type = parsed.type || 'json';
+      const rawContent = parsed.content;
+
+      if (typeof rawContent === 'object') {
+        content = rawContent;
+      } else {
+        // Content is a string — try to parse it
+        try {
+          content = JSON.parse(rawContent);
+        } catch {
+          // Has extra text — extract JSON from it
+          const firstBrace = rawContent.indexOf('{');
+          const lastBrace = rawContent.lastIndexOf('}');
+          if (firstBrace !== -1 && lastBrace !== -1) {
+            const jsonStr = rawContent.substring(firstBrace, lastBrace + 1);
+            content = JSON.parse(fixJSONStringValues(jsonStr));
+          }
+        }
+      }
+      console.log('Content parsed successfully via direct parse');
+
+    } catch {
+      // Step 4: Manual extraction
+      console.log('Full body parse failed, extracting manually...');
+
+      // Extract type
+      const typeMatch = cleaned.match(/"type"\s*:\s*"([^"]+)"/);
+      type = typeMatch ? typeMatch[1] : 'json';
+
+      // Find where Claude's JSON starts
+      const contentKeyPos = cleaned.indexOf('"content"');
+      const colonPos = cleaned.indexOf(':', contentKeyPos);
+      const openQuotePos = cleaned.indexOf('"', colonPos + 1);
+      const claudeTextStart = openQuotePos + 1;
+      const firstBrace = cleaned.indexOf('{', claudeTextStart);
+
+      console.log('Claude JSON starts at:', firstBrace);
+
+      if (firstBrace === -1) {
+        throw new Error('No JSON found in Claude response');
+      }
+
+      // Find end using robust brace counter
+      const claudeJsonEnd = findJSONEnd(cleaned, firstBrace);
+      console.log('Claude JSON ends at:', claudeJsonEnd);
+      console.log('Total cleaned length:', cleaned.length);
+
+      if (claudeJsonEnd === -1) {
+        throw new Error('Could not find end of Claude JSON');
+      }
+
+      let claudeJSON = cleaned.substring(firstBrace, claudeJsonEnd + 1);
+      console.log('Claude JSON length:', claudeJSON.length);
+      console.log('Claude JSON last 200 chars:', claudeJSON.substring(claudeJSON.length - 200));
+
+      // Step 5: Try parsing extracted JSON
+      try {
+        content = JSON.parse(claudeJSON);
+        console.log('Claude JSON parsed successfully');
+      } catch (parseErr) {
+        console.log('Parse failed, attempting repair:', parseErr.message);
+
+        // Step 6: Repair and retry
+        const repaired = repairJSON(claudeJSON);
+        try {
+          content = JSON.parse(repaired);
+          console.log('Repaired JSON parsed successfully');
+        } catch (repairErr) {
+          console.error('Repair failed:', repairErr.message);
+
+          // Step 7: Last resort — find last complete top-level field
+          // and truncate there
+          console.log('Attempting truncation repair...');
+
+          // Find the last }, or }] that indicates end of a complete object
+          // Work backwards from the end
+          let truncatePos = claudeJSON.length - 1;
+          let attempts = 0;
+
+          while (attempts < 50) {
+            // Find last occurrence of ]} or }} or },
+            const lastCompleteObj = Math.max(
+              claudeJSON.lastIndexOf('}},', truncatePos),
+              claudeJSON.lastIndexOf('}]', truncatePos),
+              claudeJSON.lastIndexOf(']}', truncatePos)
+            );
+
+            if (lastCompleteObj === -1) break;
+
+            // Try to close the JSON at this point
+            const truncated = claudeJSON.substring(0, lastCompleteObj + 2);
+            const repairAttempt = repairJSON(truncated);
+
+            try {
+              content = JSON.parse(repairAttempt);
+              console.log('Truncation repair succeeded at position:', lastCompleteObj);
+              break;
+            } catch {
+              truncatePos = lastCompleteObj - 1;
+              attempts++;
+            }
+          }
+
+          if (!content) {
+            throw new Error(`Could not parse Claude JSON after all repair attempts: ${repairErr.message}`);
+          }
+        }
+      }
+    }
+
+    if (content) {
+      console.log('Content ready, type:', type);
+      console.log('Content keys:', Object.keys(content).join(', '));
+    }
 
   } catch (parseError) {
     console.error('Body parse error:', parseError.message);
