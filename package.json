@@ -1,1 +1,7 @@
-
+{
+  "name": "claude-agent-output",
+  "version": "1.0.0",
+  "dependencies": {
+    "pusher": "^5.1.3"
+  }
+}
