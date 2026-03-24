@@ -36,45 +36,10 @@ module.exports = async function handler(req, res) {
 
   try {
     const rawBody = await getRawBody(req);
+    
+    // Log first 500 chars to see what we are receiving
     console.log('Raw body received:', rawBody.substring(0, 500));
 
-    const parsed = JSON.parse(rawBody);
-    content = parsed.content;
-    type = parsed.type;
-
-  } catch (parseError) {
-    console.error('Body parse error:', parseError.message);
-    return res.status(400).json({
-      error: 'Could not parse body',
-      details: parseError.message
-    });
-  }
-
-  if (!content) {
-    return res.status(400).json({ error: 'No content provided' });
-  }
-
-  // Initialize Pusher
-  const pusher = new Pusher({
-    appId: process.env.PUSHER_APP_ID,
-    key: process.env.PUSHER_KEY,
-    secret: process.env.PUSHER_SECRET,
-    cluster: process.env.PUSHER_CLUSTER,
-    useTLS: true
-  });
-
-  try {
-    await pusher.trigger('agent-channel', 'agent-update', {
-      content: content,
-      type: type || 'json',
-      timestamp: new Date().toISOString()
-    });
-
-    console.log(`Webhook received at ${new Date().toISOString()}`);
-    return res.status(200).json({ success: true });
-
-  } catch (error) {
-    console.error('Pusher error:', error.message);
-    return res.status(500).json({ error: error.message });
-  }
-};
+    // Extract content value using regex to avoid JSON parse issues
+    // This pulls out the content field directly without parsing the whole body
+    const typeMatch = rawBody.match(/"type"\s*:\s*"([^
