@@ -1,11 +1,5 @@
 const Ably = require('ably');
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
     let data = '';
@@ -125,4 +119,72 @@ module.exports = async function handler(req, res) {
     const rawBody = await getRawBody(req);
     console.log('Raw body received:', rawBody.substring(0, 500));
 
-    // Parse the outer JSON wrapper
+    // Parse the outer JSON wrapper directly
+    let outerParsed;
+    try {
+      outerParsed = JSON.parse(rawBody);
+      console.log('Outer wrapper parsed successfully');
+    } catch {
+      // Clean control characters and retry
+      console.log('Outer parse failed, cleaning and retrying');
+      const cleaned = rawBody
+        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+      outerParsed = JSON.parse(cleaned);
+    }
+
+    // Get content and type from parsed wrapper
+    const rawContent = outerParsed.content;
+    type = outerParsed.type || 'json';
+
+    console.log('Raw content:',
+      typeof rawContent === 'string'
+        ? rawContent.substring(0, 300)
+        : JSON.stringify(rawContent).substring(0, 300)
+    );
+
+    if (!rawContent) {
+      throw new Error('No content field in body');
+    }
+
+    // If content is already an object use it directly
+    if (typeof rawContent === 'object') {
+      content = rawContent;
+      console.log('Content is already an object');
+    } else {
+      // Content is a string — extract and clean JSON from it
+      content = extractAndCleanJSON(rawContent);
+    }
+
+    console.log('Successfully parsed content');
+
+  } catch (parseError) {
+    console.error('Body parse error:', parseError.message);
+    return res.status(400).json({
+      error: 'Could not parse body',
+      details: parseError.message
+    });
+  }
+
+  if (!content) {
+    return res.status(400).json({ error: 'No content provided' });
+  }
+
+  // Initialize Ably
+  const ably = new Ably.Rest({ key: process.env.ABLY_API_KEY });
+  const channel = ably.channels.get('agent-channel');
+
+  try {
+    await channel.publish('agent-update', {
+      content: content,
+      type: type || 'json',
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`Webhook received and published at ${new Date().toISOString()}`);
+    return res.status(200).json({ success: true });
+
+  } catch (error) {
+    console.error('Ably error:', error.message);
+    return res.status(500).json({ error: error.message });
+  }
+};
