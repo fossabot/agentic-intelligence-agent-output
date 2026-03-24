@@ -1,4 +1,4 @@
-const Pusher = require('pusher');
+const Ably = require('ably');
 
 export const config = {
   api: {
@@ -17,29 +17,31 @@ function getRawBody(req) {
   });
 }
 
-// Extract just the JSON object from Claude's response
-// Handles extra text, markdown code blocks, pretty printing etc.
-function extractJSON(str) {
+// Extract and clean JSON from Claude's response
+function extractAndCleanJSON(str) {
+  console.log('Extracting JSON from:', str.substring(0, 200));
+
   // Step 1: Remove markdown code blocks
   str = str
     .replace(/```json\n?/gi, '')
     .replace(/```\n?/gi, '');
 
-  // Step 2: Find the first { and last } to extract just the JSON object
+  // Step 2: Find the first { and last }
   const firstBrace = str.indexOf('{');
   const lastBrace = str.lastIndexOf('}');
 
   if (firstBrace === -1 || lastBrace === -1) {
-    throw new Error('No JSON object found in content');
+    throw new Error('No JSON object found in Claude response');
   }
 
+  // Extract just the JSON part
   str = str.substring(firstBrace, lastBrace + 1);
 
-  // Step 3: Remove all control characters
+  // Step 3: Remove all bad control characters
   str = str.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
 
-  // Step 4: Fix newlines and tabs inside JSON string values
-  // This replaces literal newlines with spaces only inside string values
+  // Step 4: Process character by character to fix
+  // newlines and tabs inside string values
   let result = '';
   let inString = false;
   let escaped = false;
@@ -66,7 +68,6 @@ function extractJSON(str) {
     }
 
     if (inString) {
-      // Inside a string value - replace literal newlines/tabs with spaces
       if (char === '\n' || char === '\r') {
         result += ' ';
       } else if (char === '\t') {
@@ -75,15 +76,15 @@ function extractJSON(str) {
         result += char;
       }
     } else {
-      // Outside string - remove whitespace
-      if (char === '\n' || char === '\r' || char === '\t') {
-        // skip
+      if (char === '\n' || char === '\r' || char === '\t' || char === ' ') {
+        // skip whitespace outside strings
       } else {
         result += char;
       }
     }
   }
 
+  console.log('Cleaned JSON:', result.substring(0, 200));
   return result;
 }
 
@@ -108,44 +109,37 @@ module.exports = async function handler(req, res) {
     const rawBody = await getRawBody(req);
     console.log('Raw body received:', rawBody.substring(0, 500));
 
-    // First extract the outer wrapper to get content and type
-    // Find content value start
-    const contentKeyIndex = rawBody.indexOf('"content"');
-    const typeMatch = rawBody.match(/"type"\s*:\s*"([^"]+)"/);
+    // Clean outer wrapper
+    const outerCleaned = rawBody
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+
+    // Extract type field
+    const typeMatch = outerCleaned.match(/"type"\s*:\s*"([^"]+)"/);
     type = typeMatch ? typeMatch[1] : 'json';
 
-    if (contentKeyIndex === -1) {
-      throw new Error('No content field found in body');
-    }
+    // Extract raw content value
+    const contentMatch = outerCleaned.match(/"content"\s*:\s*"([\s\S]*?)"\s*(?:,\s*"type"|,\s*"timestamp"|\s*\})/);
 
-    // Extract everything after "content": 
-    const afterContentKey = rawBody.substring(contentKeyIndex + 9).trim();
-    // Remove the colon
-    const afterColon = afterContentKey.substring(
-      afterContentKey.indexOf(':') + 1
-    ).trim();
-
-    // Get the raw content value (everything between first " and matching close)
-    // Or if it starts with { it's a raw JSON object
     let rawContent;
-    if (afterColon.trimStart().startsWith('"')) {
-      // Content is a quoted string - find the end quote
-      // accounting for escaped quotes
-      let i = 1; // skip opening quote
-      const inner = afterColon.trimStart().substring(1);
-      rawContent = inner.substring(0, inner.lastIndexOf('"'));
+    if (contentMatch) {
+      rawContent = contentMatch[1];
+      console.log('Content extracted via regex:', rawContent.substring(0, 200));
     } else {
-      // Content might be a raw object
-      rawContent = afterColon;
+      const outerParsed = JSON.parse(outerCleaned);
+      rawContent = outerParsed.content;
+      type = outerParsed.type || 'json';
     }
 
-    console.log('Extracted raw content:', rawContent.substring(0, 300));
+    if (!rawContent) {
+      throw new Error('Could not extract content from body');
+    }
 
-    // Now extract and clean the JSON from Claude's response
-    const cleanJSON = extractJSON(rawContent);
-    console.log('Cleaned JSON:', cleanJSON.substring(0, 300));
+    // Extract and clean JSON from Claude's response
+    const cleanJSON = extractAndCleanJSON(rawContent);
 
+    // Parse the cleaned JSON
     content = JSON.parse(cleanJSON);
+    console.log('Successfully parsed JSON content');
 
   } catch (parseError) {
     console.error('Body parse error:', parseError.message);
@@ -159,27 +153,22 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'No content provided' });
   }
 
-  // Initialize Pusher
-  const pusher = new Pusher({
-    appId: process.env.PUSHER_APP_ID,
-    key: process.env.PUSHER_KEY,
-    secret: process.env.PUSHER_SECRET,
-    cluster: process.env.PUSHER_CLUSTER,
-    useTLS: true
-  });
+  // Initialize Ably
+  const ably = new Ably.Rest(process.env.ABLY_API_KEY);
+  const channel = ably.channels.get('agent-channel');
 
   try {
-    await pusher.trigger('agent-channel', 'agent-update', {
+    await channel.publish('agent-update', {
       content: content,
       type: type || 'json',
       timestamp: new Date().toISOString()
     });
 
-    console.log(`Webhook received at ${new Date().toISOString()}`);
+    console.log(`Webhook received and published at ${new Date().toISOString()}`);
     return res.status(200).json({ success: true });
 
   } catch (error) {
-    console.error('Pusher error:', error.message);
+    console.error('Ably error:', error.message);
     return res.status(500).json({ error: error.message });
   }
 };
