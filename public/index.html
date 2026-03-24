@@ -71,77 +71,295 @@
 
     #output-container.updating { border-color: #f59e0b; }
 
-    #output-content { line-height: 1.7; }
-
-    #output-content h1,
-    #output-content h2,
-    #output-content h3 {
-      color: #ffffff;
-      margin: 16px 0 8px;
-    }
-
-    #output-content p { margin-bottom: 12px; color: #c0c0c0; }
-
-    #output-content ul,
-    #output-content ol {
-      padding-left: 24px;
-      margin-bottom: 12px;
-    }
-
-    #output-content li { margin-bottom: 6px; color: #c0c0c0; }
-
-    #output-content code {
-      background: #2a2d3a;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: monospace;
-      font-size: 0.9em;
-      color: #a78bfa;
-    }
-
-    #output-content pre {
-      background: #2a2d3a;
-      padding: 16px;
-      border-radius: 8px;
-      overflow-x: auto;
-      margin-bottom: 12px;
-    }
-
-    #output-content table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 12px;
-    }
-
-    #output-content th,
-    #output-content td {
+    /* Section Cards */
+    .section-card {
+      background: #12151f;
       border: 1px solid #2a2d3a;
-      padding: 8px 12px;
-      text-align: left;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
     }
 
-    #output-content th { background: #2a2d3a; color: #fff; }
-
-    .json-label {
-      color: #a78bfa;
-      font-weight: bold;
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #2a2d3a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .json-value {
-      color: #c0c0c0;
-      margin-left: 8px;
-    }
-
-    .json-section {
+    /* Executive Summary */
+    .exec-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
       margin-bottom: 16px;
     }
 
-    .json-nested {
-      padding-left: 16px;
-      border-left: 2px solid #2a2d3a;
-      margin-top: 8px;
+    .exec-meta {
+      background: #1a1d27;
+      border-radius: 8px;
+      padding: 12px;
     }
 
+    .exec-meta-label {
+      font-size: 0.75rem;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .exec-meta-value {
+      font-size: 0.9rem;
+      color: #c0c0c0;
+    }
+
+    .overview-text {
+      color: #c0c0c0;
+      line-height: 1.7;
+      font-size: 0.95rem;
+      margin-bottom: 16px;
+    }
+
+    .priority-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .priority-item {
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      border-left: 3px solid #555;
+      background: #1a1d27;
+      color: #c0c0c0;
+    }
+
+    .priority-item.critical {
+      border-left-color: #ef4444;
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .priority-item.high {
+      border-left-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.05);
+    }
+
+    .priority-item.medium {
+      border-left-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .priority-item.low {
+      border-left-color: #22c55e;
+      background: rgba(34, 197, 94, 0.05);
+    }
+
+    /* Risk Findings */
+    .risk-card {
+      background: #12151f;
+      border: 1px solid #2a2d3a;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .risk-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .risk-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ffffff;
+      flex: 1;
+    }
+
+    .rating-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .rating-critical {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid #ef4444;
+    }
+
+    .rating-high {
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+      border: 1px solid #f59e0b;
+    }
+
+    .rating-medium {
+      background: rgba(59, 130, 246, 0.2);
+      color: #3b82f6;
+      border: 1px solid #3b82f6;
+    }
+
+    .rating-low {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+      border: 1px solid #22c55e;
+    }
+
+    /* Field Labels */
+    .field-label {
+      font-size: 0.75rem;
+      color: #a78bfa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      margin-top: 14px;
+      font-weight: 600;
+    }
+
+    .field-value {
+      color: #c0c0c0;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    /* Lists */
+    .field-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .field-list li {
+      padding: 6px 0 6px 16px;
+      border-bottom: 1px solid #1a1d27;
+      color: #c0c0c0;
+      font-size: 0.9rem;
+      position: relative;
+    }
+
+    .field-list li:before {
+      content: '›';
+      position: absolute;
+      left: 0;
+      color: #a78bfa;
+    }
+
+    .field-list li:last-child {
+      border-bottom: none;
+    }
+
+    /* Evidence Block */
+    .evidence-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .evidence-block {
+      background: #1a1d27;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .evidence-block-title {
+      font-size: 0.75rem;
+      color: #a78bfa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .ioc-item {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #22c55e;
+      padding: 2px 0;
+      word-break: break-all;
+    }
+
+    /* MITRE ATT&CK */
+    .mitre-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .mitre-tag {
+      background: rgba(167, 139, 250, 0.1);
+      border: 1px solid rgba(167, 139, 250, 0.3);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      color: #a78bfa;
+      font-family: monospace;
+    }
+
+    /* Threat Actors */
+    .actor-tag {
+      display: inline-block;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.85rem;
+      color: #f59e0b;
+      margin: 4px;
+    }
+
+    /* Recommendations */
+    .rec-list {
+      list-style: none;
+      padding: 0;
+      counter-reset: rec-counter;
+    }
+
+    .rec-list li {
+      counter-increment: rec-counter;
+      padding: 8px 8px 8px 36px;
+      border-bottom: 1px solid #1a1d27;
+      color: #c0c0c0;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      position: relative;
+    }
+
+    .rec-list li:before {
+      content: counter(rec-counter);
+      position: absolute;
+      left: 8px;
+      top: 8px;
+      background: #a78bfa;
+      color: #0f1117;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .rec-list li:last-child {
+      border-bottom: none;
+    }
+
+    /* History */
     .history-section { margin-top: 24px; }
 
     .history-section h3 {
@@ -160,6 +378,25 @@
       margin-bottom: 8px;
       font-size: 0.85rem;
       color: #666;
+      cursor: pointer;
+    }
+
+    .history-item:hover {
+      border-color: #555;
+      color: #aaa;
+    }
+
+    /* Divider */
+    .risk-divider {
+      border: none;
+      border-top: 1px solid #2a2d3a;
+      margin: 8px 0 16px 0;
+    }
+
+    @media (max-width: 600px) {
+      .exec-grid { grid-template-columns: 1fr; }
+      .evidence-grid { grid-template-columns: 1fr; }
+      .risk-header { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
@@ -189,11 +426,6 @@
   </div>
 
   <script>
-    // ============================================================
-    const ably = new Ably.Realtime({
-      authUrl: '/api/auth'
-    });
-
     const statusDot = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
     const outputContent = document.getElementById('output-content');
@@ -202,10 +434,10 @@
     const historyList = document.getElementById('history-list');
     let updateHistory = [];
 
-    // Initialize Ably
+    // Initialize Ably using token auth
+    const ably = new Ably.Realtime({ authUrl: '/api/auth' });
     const channel = ably.channels.get('agent-channel');
 
-    // Connection status handlers
     ably.connection.on('connected', () => {
       statusDot.className = 'connected';
       statusText.textContent = 'Connected — Listening for updates';
@@ -221,74 +453,277 @@
       statusText.textContent = 'Connection error';
     });
 
-    // Render JSON object as formatted HTML
-    function renderJSON(data) {
-      if (typeof data !== 'object' || data === null) {
-        return `<p>${data}</p>`;
+    // ============================================================
+    // CUSTOM RENDERERS
+    // ============================================================
+
+    function getRatingClass(rating) {
+      if (!rating) return '';
+      const r = rating.toLowerCase();
+      if (r.includes('critical')) return 'critical';
+      if (r.includes('high')) return 'high';
+      if (r.includes('medium')) return 'medium';
+      if (r.includes('low')) return 'low';
+      return '';
+    }
+
+    function renderList(items) {
+      if (!items || !items.length) return '<p class="field-value">None identified</p>';
+      if (!Array.isArray(items)) {
+        return `<p class="field-value">${items}</p>`;
+      }
+      return `<ul class="field-list">
+        ${items.map(item => `<li>${typeof item === 'object' ? JSON.stringify(item) : item}</li>`).join('')}
+      </ul>`;
+    }
+
+    function renderMitre(mitre) {
+      if (!mitre) return '<p class="field-value">None identified</p>';
+      let items = [];
+      if (Array.isArray(mitre)) {
+        items = mitre;
+      } else if (typeof mitre === 'object') {
+        items = Object.entries(mitre).map(([k, v]) => `${k}: ${v}`);
+      } else {
+        items = [mitre];
+      }
+      return `<div class="mitre-grid">
+        ${items.map(item => `<span class="mitre-tag">${item}</span>`).join('')}
+      </div>`;
+    }
+
+    function renderEvidence(evidence) {
+      if (!evidence) return '<p class="field-value">No evidence provided</p>';
+      if (typeof evidence === 'string') {
+        return `<p class="field-value">${evidence}</p>`;
       }
 
-      let html = '';
+      let html = '<div class="evidence-grid">';
 
-      for (const [key, value] of Object.entries(data)) {
-        // Format key to Title Case
+      for (const [key, value] of Object.entries(evidence)) {
         const label = key
           .replace(/_/g, ' ')
           .replace(/([A-Z])/g, ' $1')
-          .replace(/^./, str => str.toUpperCase());
+          .replace(/^./, s => s.toUpperCase());
 
-        if (Array.isArray(value)) {
-          // Render arrays as bullet lists
-          html += `
-            <div class="json-section">
-              <span class="json-label">${label}:</span>
-              <ul style="margin-top: 8px;">
-                ${value.map(item =>
-                  typeof item === 'object'
-                    ? `<li><div class="json-nested">${renderJSON(item)}</div></li>`
-                    : `<li>${item}</li>`
-                ).join('')}
-              </ul>
-            </div>`;
-        } else if (typeof value === 'object' && value !== null) {
-          // Render nested objects recursively
-          html += `
-            <div class="json-section">
-              <span class="json-label">${label}:</span>
-              <div class="json-nested">
-                ${renderJSON(value)}
-              </div>
-            </div>`;
-        } else {
-          // Render simple key/value pairs
-          html += `
-            <div class="json-section">
-              <span class="json-label">${label}:</span>
-              <span class="json-value">${value}</span>
-            </div>`;
-        }
+        const items = Array.isArray(value) ? value : [value];
+        html += `
+          <div class="evidence-block">
+            <div class="evidence-block-title">${label}</div>
+            ${items.map(item => `<div class="ioc-item">${item}</div>`).join('')}
+          </div>`;
       }
 
+      html += '</div>';
       return html;
     }
 
-    // Listen for agent updates from Ably
-    channel.subscribe('agent-update', (message) => {
-    // Handle both string and object data
-    let data = message.data;
-    if (typeof data === 'string') {
-      try {
-        data = JSON.parse(data);
-      } catch (e) {
-        console.error('Could not parse message data:', e);
-        return;
-      }
+    function renderThreatActors(actors) {
+      if (!actors) return '<p class="field-value">None identified</p>';
+      const items = Array.isArray(actors) ? actors : [actors];
+      return items.map(a => `<span class="actor-tag">🎭 ${a}</span>`).join('');
     }
+
+    function renderRecommendations(recs) {
+      if (!recs || !recs.length) return '<p class="field-value">None provided</p>';
+      const items = Array.isArray(recs) ? recs : [recs];
+      return `<ol class="rec-list">
+        ${items.map(item => `<li>${item}</li>`).join('')}
+      </ol>`;
+    }
+
+    function renderPriorityRisks(risks) {
+      if (!risks) return '';
+      const items = Array.isArray(risks) ? risks : [risks];
+      return `<ul class="priority-list">
+        ${items.map(item => {
+          const text = typeof item === 'string' ? item : JSON.stringify(item);
+          const ratingClass = getRatingClass(text);
+          return `<li class="priority-item ${ratingClass}">${text}</li>`;
+        }).join('')}
+      </ul>`;
+    }
+
+    function renderExecutiveSummary(exec) {
+      if (!exec) return '';
+
+      // Get all possible field names Claude might use
+      const timestamp = exec.analysis_timestamp || exec.analysis_date || 
+                        exec.analysis_date_time || exec.timestamp || '';
+      const published = exec.report_published || exec.published || 
+                        exec.date_published || '';
+      const overview = exec.overview || exec.summary || 
+                       exec.description || '';
+      const priorities = exec.highest_priority_risks || exec.priority_risks || 
+                         exec.key_findings || exec.priorities || [];
+
+      return `
+        <div class="section-card">
+          <div class="section-title">📋 Executive Summary</div>
+
+          <div class="exec-grid">
+            <div class="exec-meta">
+              <div class="exec-meta-label">Analysis Date</div>
+              <div class="exec-meta-value">${timestamp || 'N/A'}</div>
+            </div>
+            <div class="exec-meta">
+              <div class="exec-meta-label">Report Published</div>
+              <div class="exec-meta-value">${published || 'N/A'}</div>
+            </div>
+          </div>
+
+          ${overview ? `
+            <div class="field-label">Overview</div>
+            <p class="overview-text">${overview}</p>
+          ` : ''}
+
+          ${priorities && (Array.isArray(priorities) ? priorities.length > 0 : priorities) ? `
+            <div class="field-label">Highest Priority Risks</div>
+            ${renderPriorityRisks(priorities)}
+          ` : ''}
+        </div>`;
+    }
+
+    function renderRiskFinding(risk, index) {
+      const title = risk.risk_title || risk.title || `Risk Finding ${index + 1}`;
+      const rating = risk.rating || risk.severity || risk.risk_rating || '';
+      const ratingClass = getRatingClass(rating);
+      const description = risk.description || risk.details || '';
+      const actors = risk.threat_actors || risk.actors || risk.adversaries || [];
+      const mitre = risk.mitre_attack || risk.mitre || risk.attack_techniques || [];
+      const evidence = risk.evidence || risk.indicators || null;
+      const impact = risk.organizational_impact || risk.impact || '';
+      const recs = risk.recommendations || risk.remediation || [];
+
+      return `
+        <div class="risk-card">
+          <div class="risk-header">
+            <div class="risk-title">⚠️ ${title}</div>
+            ${rating ? `<span class="rating-badge rating-${ratingClass}">${rating}</span>` : ''}
+          </div>
+          <hr class="risk-divider"/>
+
+          ${actors && (Array.isArray(actors) ? actors.length > 0 : actors) ? `
+            <div class="field-label">🎭 Threat Actors</div>
+            <div style="margin-bottom: 8px;">${renderThreatActors(actors)}</div>
+          ` : ''}
+
+          ${description ? `
+            <div class="field-label">📝 Description</div>
+            <p class="field-value">${description}</p>
+          ` : ''}
+
+          ${mitre && (Array.isArray(mitre) ? mitre.length > 0 : mitre) ? `
+            <div class="field-label">🎯 MITRE ATT&CK</div>
+            <div style="margin-bottom: 8px;">${renderMitre(mitre)}</div>
+          ` : ''}
+
+          ${evidence ? `
+            <div class="field-label">🔬 Evidence</div>
+            <div style="margin-bottom: 8px;">${renderEvidence(evidence)}</div>
+          ` : ''}
+
+          ${impact ? `
+            <div class="field-label">💥 Organizational Impact</div>
+            <p class="field-value">${impact}</p>
+          ` : ''}
+
+          ${recs && (Array.isArray(recs) ? recs.length > 0 : recs) ? `
+            <div class="field-label">✅ Recommendations</div>
+            ${renderRecommendations(recs)}
+          ` : ''}
+        </div>`;
+    }
+
+    function renderReport(data) {
+      let html = '';
+
+      // 1. Executive Summary
+      const exec = data.executive_summary || data.exec_summary || 
+                   data.summary || null;
+      if (exec) {
+        html += renderExecutiveSummary(exec);
+      }
+
+      // 2. Risk Findings
+      const risks = data.risk_findings || data.risks || 
+                    data.findings || [];
+      if (risks && risks.length > 0) {
+        html += `<div class="section-card">
+          <div class="section-title">🚨 Risk Findings (${risks.length})</div>`;
+        risks.forEach((risk, i) => {
+          html += renderRiskFinding(risk, i);
+        });
+        html += `</div>`;
+      }
+
+      // 3. Threat Actors
+      const actors = data.threat_actors || data.adversaries || [];
+      if (actors && actors.length > 0) {
+        html += `
+          <div class="section-card">
+            <div class="section-title">🎭 Threat Actors</div>
+            <div>${renderThreatActors(actors)}</div>
+          </div>`;
+      }
+
+      // 4. MITRE ATT&CK Summary
+      const mitre = data.mitre_attack_summary || data.mitre_attack || 
+                    data.mitre || null;
+      if (mitre && (Array.isArray(mitre) ? mitre.length > 0 : Object.keys(mitre).length > 0)) {
+        html += `
+          <div class="section-card">
+            <div class="section-title">🎯 MITRE ATT&CK Summary</div>
+            ${renderMitre(mitre)}
+          </div>`;
+      }
+
+      // 5. Fallback — render any remaining top level fields
+      // that weren't handled above
+      const handledKeys = [
+        'executive_summary', 'exec_summary', 'summary',
+        'risk_findings', 'risks', 'findings',
+        'threat_actors', 'adversaries',
+        'mitre_attack_summary', 'mitre_attack', 'mitre'
+      ];
+
+      const remainingKeys = Object.keys(data).filter(k => !handledKeys.includes(k));
+      if (remainingKeys.length > 0) {
+        html += `<div class="section-card">
+          <div class="section-title">📊 Additional Information</div>`;
+        remainingKeys.forEach(key => {
+          const label = key
+            .replace(/_/g, ' ')
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/^./, s => s.toUpperCase());
+          const value = data[key];
+          html += `<div class="field-label">${label}</div>`;
+          if (Array.isArray(value)) {
+            html += renderList(value);
+          } else if (typeof value === 'object') {
+            html += `<pre style="color:#c0c0c0; font-size:0.85rem; overflow-x:auto">${JSON.stringify(value, null, 2)}</pre>`;
+          } else {
+            html += `<p class="field-value">${value}</p>`;
+          }
+        });
+        html += `</div>`;
+      }
+
+      return html || '<p style="color:#444">No data to display</p>';
+    }
+
+    // Listen for agent updates
+    channel.subscribe('agent-update', (message) => {
+      let data = message.data;
+      if (typeof data === 'string') {
+        try { data = JSON.parse(data); } catch (e) { return; }
+      }
 
       statusDot.className = 'receiving';
       statusText.textContent = 'Receiving update...';
       outputContainer.classList.add('updating');
 
-      // Save current content to history
+      // Save to history
       if (outputContent.innerText.trim() &&
           !outputContent.innerText.includes('Waiting')) {
         updateHistory.unshift({
@@ -300,22 +735,14 @@
       }
 
       setTimeout(() => {
-        if (data.type === 'html') {
-          // Sanitize and inject HTML directly
-          outputContent.innerHTML = DOMPurify.sanitize(data.content);
+        try {
+          const parsed = typeof data.content === 'object'
+            ? data.content
+            : JSON.parse(data.content);
 
-        } else if (data.type === 'json') {
-          try {
-            // Handle if content is already an object or still a string
-            const parsed = typeof data.content === 'object'
-              ? data.content
-              : JSON.parse(data.content);
-
-            outputContent.innerHTML = renderJSON(parsed);
-          } catch (e) {
-            // Fallback to raw display if parsing fails
-            outputContent.innerHTML = `<pre><code>${data.content}</code></pre>`;
-          }
+          outputContent.innerHTML = DOMPurify.sanitize(renderReport(parsed));
+        } catch (e) {
+          outputContent.innerHTML = `<pre style="color:#c0c0c0">${JSON.stringify(data.content, null, 2)}</pre>`;
         }
 
         const d = new Date(data.timestamp);
