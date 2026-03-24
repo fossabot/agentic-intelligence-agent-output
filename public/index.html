@@ -222,15 +222,17 @@
         if (data.type === 'html') {
           outputContent.innerHTML = DOMPurify.sanitize(data.content);
         } else if (data.type === 'json') {
-          try {
-            const parsed = JSON.parse(data.content);
-            outputContent.innerHTML =
-              `<pre><code>${JSON.stringify(parsed, null, 2)}</code></pre>`;
-          } catch {
-            outputContent.innerHTML = `<pre><code>${data.content}</code></pre>`;
-          }
-        }
-
+  try {
+    // Handle if content is already an object or still a string
+    const parsed = typeof data.content === 'object' 
+      ? data.content 
+      : JSON.parse(data.content);
+    
+    outputContent.innerHTML = renderJSON(parsed);
+  } catch {
+    outputContent.innerHTML = `<pre><code>${data.content}</code></pre>`;
+  }
+}
         const d = new Date(data.timestamp);
         timestampEl.textContent =
           `Last updated: ${d.toLocaleTimeString()} on ${d.toLocaleDateString()}`;
