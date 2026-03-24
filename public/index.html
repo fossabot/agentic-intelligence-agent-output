@@ -720,106 +720,110 @@
     // ============================================================
 
     function renderReport(data) {
-      let html = '';
+  let html = '';
 
-      // 1. Executive Summary — always first
-      const execKeys = ['executive_summary', 'exec_summary', 'summary'];
-      const execKey = execKeys.find(k => data[k]);
-      if (execKey) {
-        html += renderExecutiveSummary(data[execKey]);
+  // STRICT ORDER — always render in this sequence
+  // regardless of JSON key order
+
+  // 1. Executive Summary — always first
+  const execKeys = ['executive_summary', 'exec_summary', 'summary'];
+  const execKey = execKeys.find(k => data[k]);
+  if (execKey) {
+    html += renderExecutiveSummary(data[execKey]);
+  }
+
+  // 2. Risk Findings — always second
+  const riskKeys = ['risk_findings', 'risks', 'findings', 'risk_assessment'];
+  const riskKey = riskKeys.find(k => data[k] && toArray(data[k]).length);
+  if (riskKey) {
+    const risks = toArray(data[riskKey]);
+    html += `
+      <div class="section-card">
+        <div class="section-title">🚨 Risk Findings (${risks.length})</div>
+        ${risks.map((risk, i) => renderRiskFinding(risk, i)).join('')}
+      </div>`;
+  }
+
+  // 3. Threat Actors — always third
+  const actorKeys = ['threat_actors', 'adversaries', 'actors'];
+  const actorKey = actorKeys.find(k => data[k] && toArray(data[k]).length);
+  if (actorKey) {
+    html += `
+      <div class="section-card">
+        <div class="section-title">🎭 Threat Actors</div>
+        <div>${renderThreatActors(data[actorKey])}</div>
+      </div>`;
+  }
+
+  // 4. MITRE ATT&CK Summary — always fourth
+  const mitreKeys = ['mitre_attack_summary', 'mitre_attack', 'mitre', 'attack_summary'];
+  const mitreKey = mitreKeys.find(k => data[k] && toArray(data[k]).length);
+  if (mitreKey) {
+    html += `
+      <div class="section-card">
+        <div class="section-title">🎯 MITRE ATT&CK Summary</div>
+        ${renderMitre(data[mitreKey])}
+      </div>`;
+  }
+
+  // 5. Recommended Actions — always fifth
+  const actionKeys = ['recommended_actions', 'recommendations', 'action_plan'];
+  const actionKey = actionKeys.find(k => data[k]);
+  if (actionKey) {
+    html += `
+      <div class="section-card">
+        <div class="section-title">✅ Recommended Actions</div>
+        ${renderRecommendedActions(data[actionKey])}
+      </div>`;
+  }
+
+  // 6. Indicators of Compromise
+  const iocKeys = ['indicators_of_compromise', 'iocs', 'indicators'];
+  const iocKey = iocKeys.find(k => data[k]);
+  if (iocKey) {
+    html += `
+      <div class="section-card">
+        <div class="section-title">🔬 Indicators of Compromise</div>
+        ${renderEvidence(data[iocKey])}
+      </div>`;
+  }
+
+  // 7. Assessment Metadata — second to last
+  const metaKeys = ['assessment_metadata', 'metadata', 'report_metadata'];
+  const metaKey = metaKeys.find(k => data[k]);
+  if (metaKey) {
+    const meta = data[metaKey];
+    html += `<div class="section-card">
+      <div class="section-title">📊 Assessment Metadata</div>`;
+    for (const [key, value] of Object.entries(meta)) {
+      const label = key
+        .replace(/_/g, ' ')
+        .replace(/^./, s => s.toUpperCase());
+      html += `<div class="field-label">${label}</div>`;
+      if (Array.isArray(value)) {
+        html += renderList(value);
+      } else if (typeof value === 'object') {
+        html += renderEvidence(value);
+      } else {
+        html += `<p class="field-value">${value}</p>`;
       }
-
-      // 2. Risk Findings
-      const riskKeys = ['risk_findings', 'risks', 'findings', 'risk_assessment'];
-      const riskKey = riskKeys.find(k => data[k] && toArray(data[k]).length);
-      if (riskKey) {
-        const risks = toArray(data[riskKey]);
-        html += `
-          <div class="section-card">
-            <div class="section-title">🚨 Risk Findings (${risks.length})</div>
-            ${risks.map((risk, i) => renderRiskFinding(risk, i)).join('')}
-          </div>`;
-      }
-
-      // 3. Threat Actors
-      const actorKeys = ['threat_actors', 'adversaries', 'actors'];
-      const actorKey = actorKeys.find(k => data[k] && toArray(data[k]).length);
-      if (actorKey) {
-        html += `
-          <div class="section-card">
-            <div class="section-title">🎭 Threat Actors</div>
-            <div>${renderThreatActors(data[actorKey])}</div>
-          </div>`;
-      }
-
-      // 4. MITRE ATT&CK Summary
-      const mitreKeys = ['mitre_attack_summary', 'mitre_attack', 'mitre', 'attack_summary'];
-      const mitreKey = mitreKeys.find(k => data[k] && toArray(data[k]).length);
-      if (mitreKey) {
-        html += `
-          <div class="section-card">
-            <div class="section-title">🎯 MITRE ATT&CK Summary</div>
-            ${renderMitre(data[mitreKey])}
-          </div>`;
-      }
-
-      // 5. Recommended Actions
-      const actionKeys = ['recommended_actions', 'recommendations', 'action_plan'];
-      const actionKey = actionKeys.find(k => data[k]);
-      if (actionKey) {
-        html += `
-          <div class="section-card">
-            <div class="section-title">✅ Recommended Actions</div>
-            ${renderRecommendedActions(data[actionKey])}
-          </div>`;
-      }
-
-      // 6. Indicators of Compromise
-      const iocKeys = ['indicators_of_compromise', 'iocs', 'indicators'];
-      const iocKey = iocKeys.find(k => data[k]);
-      if (iocKey) {
-        html += `
-          <div class="section-card">
-            <div class="section-title">🔬 Indicators of Compromise</div>
-            ${renderEvidence(data[iocKey])}
-          </div>`;
-      }
-
-      // 7. Assessment Metadata — always last
-      const metaKeys = ['assessment_metadata', 'metadata', 'report_metadata'];
-      const metaKey = metaKeys.find(k => data[k]);
-      if (metaKey) {
-        const meta = data[metaKey];
-        html += `<div class="section-card">
-          <div class="section-title">📊 Assessment Metadata</div>`;
-        for (const [key, value] of Object.entries(meta)) {
-          const label = key.replace(/_/g, ' ').replace(/^./, s => s.toUpperCase());
-          html += `<div class="field-label">${label}</div>`;
-          if (Array.isArray(value)) {
-            html += renderList(value);
-          } else if (typeof value === 'object') {
-            html += renderEvidence(value);
-          } else {
-            html += `<p class="field-value">${value}</p>`;
-          }
-        }
-        html += `</div>`;
-      }
-
-      // 8. Analyst Notes — always last
-      const noteKeys = ['analyst_notes', 'notes', 'analyst_note', 'analysis_notes'];
-      const noteKey = noteKeys.find(k => data[k]);
-      if (noteKey) {
-        html += `
-          <div class="section-card">
-            <div class="section-title">📝 Analyst Notes</div>
-            <p class="overview-text">${data[noteKey]}</p>
-          </div>`;
-      }
-
-      return html || '<p style="color:#444">No data to display</p>';
     }
+    html += `</div>`;
+  }
 
+  // 8. Analyst Notes — always last
+  const noteKeys = ['analyst_notes', 'notes', 'analyst_note', 'analysis_notes'];
+  const noteKey = noteKeys.find(k => data[k]);
+  if (noteKey) {
+    html += `
+      <div class="section-card">
+        <div class="section-title">📝 Analyst Notes</div>
+        <p class="overview-text">${data[noteKey]}</p>
+      </div>`;
+  }
+
+  return html || '<p style="color:#444">No data to display</p>';
+}
     // ============================================================
     // ABLY MESSAGE HANDLER
     // ============================================================
