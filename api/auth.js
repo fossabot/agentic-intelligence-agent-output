@@ -3,10 +3,12 @@ const Ably = require('ably');
 module.exports = async function handler(req, res) {
   try {
     const client = new Ably.Rest({ key: process.env.ABLY_API_KEY });
-    
+
     const tokenRequest = await new Promise((resolve, reject) => {
       client.auth.createTokenRequest(
-        { capability: { 'agent-channel': ['subscribe'] } },
+        {
+          capability: { 'agent-channel': ['subscribe'] }
+        },
         (err, tokenRequest) => {
           if (err) reject(err);
           else resolve(tokenRequest);
@@ -14,6 +16,12 @@ module.exports = async function handler(req, res) {
       );
     });
 
+    // Make sure capability is an object not a string
+    if (typeof tokenRequest.capability === 'string') {
+      tokenRequest.capability = JSON.parse(tokenRequest.capability);
+    }
+
+    console.log('Token request created:', JSON.stringify(tokenRequest));
     res.status(200).json(tokenRequest);
 
   } catch (error) {
