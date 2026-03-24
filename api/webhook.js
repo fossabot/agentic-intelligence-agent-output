@@ -98,6 +98,93 @@ function extractAndCleanJSON(str) {
   return JSON.parse(result);
 }
 
+// Extract content and type from raw body
+// Handles messy Claude output inside the content field
+function extractContentFromBody(rawBody) {
+  console.log('Extracting content from body...');
+
+  // Step 1: Try direct JSON parse first (works for clean Reqbin tests)
+  try {
+    const parsed = JSON.parse(rawBody);
+    console.log('Direct body parse succeeded');
+    return {
+      content: parsed.content,
+      type: parsed.type || 'json'
+    };
+  } catch {
+    console.log('Direct body parse failed, using manual extraction');
+  }
+
+  // Step 2: Extract type field using regex
+  const typeMatch = rawBody.match(/"type"\s*:\s*"([^"]+)"/);
+  const type = typeMatch ? typeMatch[1] : 'json';
+
+  // Step 3: Find the content field value
+  // Look for "content": " and extract everything until the last "
+  // before "type" or end of object
+  const contentKeyIndex = rawBody.indexOf('"content"');
+  if (contentKeyIndex === -1) {
+    throw new Error('No content field found in body');
+  }
+
+  // Get everything after "content":
+  const afterContentKey = rawBody.substring(contentKeyIndex + '"content"'.length);
+  
+  // Find the colon
+  const colonIndex = afterContentKey.indexOf(':');
+  const afterColon = afterContentKey.substring(colonIndex + 1).trimStart();
+
+  // Find the opening quote of the content value
+  if (!afterColon.startsWith('"')) {
+    throw new Error('Content value is not a string');
+  }
+
+  // Extract content by finding matching closing quote
+  // accounting for escaped quotes
+  let content = '';
+  let i = 1; // skip opening quote
+  let foundEnd = false;
+
+  while (i < afterColon.length) {
+    const char = afterColon[i];
+    
+    if (char === '\\') {
+      // Escaped character - keep both chars
+      content += char;
+      i++;
+      if (i < afterColon.length) {
+        content += afterColon[i];
+      }
+      i++;
+      continue;
+    }
+    
+    if (char === '"') {
+      // End of content string
+      foundEnd = true;
+      break;
+    }
+    
+    content += char;
+    i++;
+  }
+
+  if (!foundEnd) {
+    throw new Error('Could not find end of content string');
+  }
+
+  // Unescape the content string
+  content = content
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+    .replace(/\\r/g, '\r')
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\');
+
+  console.log('Extracted content:', content.substring(0, 300));
+  return { content, type };
+}
+
 // Publish to Ably using direct REST API call
 function publishToAbly(apiKey, channelName, eventName, data) {
   return new Promise((resolve, reject) => {
@@ -112,8 +199,6 @@ function publishToAbly(apiKey, channelName, eventName, data) {
     });
 
     console.log('Publishing to Ably REST API...');
-    console.log('Channel:', channelName);
-    console.log('Event:', eventName);
     console.log('Payload size:', payload.length, 'bytes');
 
     const options = {
@@ -175,35 +260,23 @@ module.exports = async function handler(req, res) {
     const rawBody = await getRawBody(req);
     console.log('Raw body received:', rawBody.substring(0, 500));
 
-    // Parse the outer JSON wrapper
-    let outerParsed;
-    try {
-      outerParsed = JSON.parse(rawBody);
-      console.log('Outer wrapper parsed successfully');
-    } catch {
-      console.log('Outer parse failed, cleaning and retrying');
-      const cleaned = rawBody
-        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
-      outerParsed = JSON.parse(cleaned);
-    }
+    // Extract content and type from body
+    const extracted = extractContentFromBody(rawBody);
+    type = extracted.type;
+    const rawContent = extracted.content;
 
-    const rawContent = outerParsed.content;
-    type = outerParsed.type || 'json';
-
-    console.log('Raw content:',
-      typeof rawContent === 'string'
-        ? rawContent.substring(0, 300)
-        : JSON.stringify(rawContent).substring(0, 300)
-    );
+    console.log('Raw content extracted:', rawContent.substring(0, 300));
 
     if (!rawContent) {
       throw new Error('No content field in body');
     }
 
+    // If content is already an object use directly
     if (typeof rawContent === 'object') {
       content = rawContent;
       console.log('Content is already an object');
     } else {
+      // Extract and clean JSON from Claude's response
       content = extractAndCleanJSON(rawContent);
     }
 
