@@ -2,16 +2,22 @@ const Ably = require('ably');
 
 module.exports = async function handler(req, res) {
   try {
-    const ably = new Ably.Rest(process.env.ABLY_API_KEY);
-    
-    const tokenRequest = await ably.auth.createTokenRequest({
-      capability: { 'agent-channel': ['subscribe'] }
+    const client = new Ably.Rest({ key: process.env.ABLY_API_KEY });
+
+    const tokenParams = {
+      capability: JSON.stringify({ 'agent-channel': ['subscribe'] })
+    };
+
+    client.auth.requestToken(tokenParams, function(err, token) {
+      if (err) {
+        console.error('Token error:', err.message);
+        return res.status(500).json({ error: err.message });
+      }
+      return res.status(200).json(token);
     });
-    
-    res.status(200).json(tokenRequest);
+
   } catch (error) {
     console.error('Auth error:', error.message);
-    res.status(500).json({ error: 'Could not generate token' });
+    res.status(500).json({ error: error.message });
   }
 };
-
