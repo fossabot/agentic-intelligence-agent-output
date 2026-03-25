@@ -840,28 +840,46 @@
         }).join('')}
       </ul>`;
     }
-
-    function renderExecutiveSummary(exec) {
-      if (!exec) return '';
-      // Format datetime — add time if only date provided
     function formatDateTime(val) {
       if (!val) return 'N/A';
-      // If it looks like just a date (YYYY-MM-DD) add time
-      if (/^\d{4}-\d{2}-\d{2}$/.test(val.trim())) {
-        return `${val.trim()} 00:00:00 UTC`;
+
+      // Already has UTC label — use as is
+      if (typeof val === 'string' && 
+          (val.includes('UTC') || val.includes('utc'))) {
+        return val;
       }
-      // If ISO format like 2026-03-25T00:00:00Z reformat nicely
-      if (val.includes('T')) {
+
+      // ISO format like 2026-03-25T17:27:28Z
+      if (typeof val === 'string' && val.includes('T')) {
         try {
-          const d = new Date(val);
-          return d.toUTCString()
-            .replace('GMT', 'UTC');
+          const clean = val.replace('Z', '');
+          const parts = clean.split('T');
+          const date = parts[0];
+          const time = parts[1] || '00:00:00';
+          // If midnight — Claude didn't set a real time
+          if (time === '00:00:00' || time === '00:00:00.000') {
+            return `${date} (time not specified)`;
+          }
+          // Trim milliseconds if present
+          const timeClean = time.split('.')[0];
+          return `${date} ${timeClean} UTC`;
         } catch {
           return val;
         }
       }
+
+      // Just a date like 2026-03-25
+      if (typeof val === 'string' && 
+          /^\d{4}-\d{2}-\d{2}$/.test(val.trim())) {
+        return `${val.trim()} (time not specified)`;
+      }
+
       return val;
     }
+
+    function renderExecutiveSummary(exec) {
+      if (!exec) return '';
+      // Format datetime — add time if only date provided
 
     const timestamp = formatDateTime(
       exec.analysis_timestamp ||
