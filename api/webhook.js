@@ -282,7 +282,7 @@ function cleanString(str) {
     .trim();
 }
 
-function flattenForOnum(obj, prefix = '') {
+ffunction flattenForOnum(obj, prefix = '') {
   const result = {};
 
   for (const [key, value] of Object.entries(obj)) {
@@ -291,46 +291,30 @@ function flattenForOnum(obj, prefix = '') {
     if (value === null || value === undefined) {
       result[fieldName] = '';
     } else if (Array.isArray(value)) {
-      // Keep as JSON array string so Onum can unroll it
-       result[fieldName] = JSON.stringify(
+      // Send as JSON array string
+      result[fieldName] = JSON.stringify(
         value.map(item => {
           if (typeof item === 'object') {
-          return cleanString(JSON.stringify(item));
+            return cleanString(JSON.stringify(item));
           }
-           return cleanString(String(item));
+          return cleanString(String(item));
         })
       );
-    }
- else if (typeof value === 'object') {
+    } else if (typeof value === 'object') {
       const nested = flattenForOnum(value, fieldName);
       Object.assign(result, nested);
     } else if (typeof value === 'string') {
-  const cleaned = cleanString(value);
-  // Split long text fields on | or sentence boundaries
-  if (cleaned.includes(' | ')) {
-    // Split on pipe separator into JSON array
-    const items = cleaned
-      .split(' | ')
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
-    result[fieldName] = JSON.stringify(items);
-  } else if (cleaned.length > 300 && (
-    fieldName.includes('overview') ||
-    fieldName.includes('description') ||
-    fieldName.includes('impact') ||
-    fieldName.includes('summary')
-  )) {
-    // Split long paragraphs on sentence boundaries
-    const sentences = cleaned
-      .split('. ')
-      .map(s => s.trim())
-      .filter(s => s.length > 0)
-      .map(s => s.endsWith('.') ? s : s + '.');
-    result[fieldName] = JSON.stringify(sentences);
-  } else {
-    result[fieldName] = cleaned;
-  }
-}
+      const cleaned = cleanString(value);
+      // Split pipe-separated values into JSON array
+      if (cleaned.includes(' | ')) {
+        const items = cleaned
+          .split(' | ')
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+        result[fieldName] = JSON.stringify(items);
+      } else {
+        result[fieldName] = cleaned;
+      }
     } else {
       result[fieldName] = value;
     }
