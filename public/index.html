@@ -566,12 +566,22 @@
   </div>
 
   <script>
-    // ============================================================
-    // PASSWORD — change this to whatever you want
-    // ============================================================
-    const APP_PASSWORD = 'CrowdStrike2026';
-    // ============================================================
+  function checkPassword() {
+    const input = document.getElementById('password-input').value;
+    const error = document.getElementById('password-error');
 
+    if (input === APP_PASSWORD) {
+      sessionStorage.setItem('authenticated', 'true');
+      document.getElementById('password-screen').classList.add('hidden');
+      document.getElementById('app').classList.add('visible');
+      error.classList.remove('visible');
+      initApp();
+    } else {
+      error.classList.add('visible');
+      document.getElementById('password-input').value = '';
+      document.getElementById('password-input').focus();
+    }
+}
     const statusDot = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
     const outputContent = document.getElementById('output-content');
