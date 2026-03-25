@@ -331,26 +331,29 @@ function sendToOnum(content, timestamp) {
       .replace(/\\r/g, ' ')
       .replace(/\\t/g, ' ');
 
-    console.log('Onum token preview:', process.env.ONUM_TOKEN ? process.env.ONUM_TOKEN.substring(0, 20) + '...' : 'NOT SET');
+    console.log('Onum auth: Basic', process.env.ONUM_USERNAME);
     console.log('Sending to Onum...');
     console.log('Onum payload size:', payload.length, 'bytes');
     console.log('Onum preview:', payload.substring(0, 300));
 
     const onumUrl = new URL(process.env.ONUM_URL);
 
-    const options = {
-      hostname: onumUrl.hostname,
-      port: onumUrl.port || 8088,
-      path: onumUrl.pathname,
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.ONUM_TOKEN}`,
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload)
-      },
-      // Accept self-signed certificates
-      rejectUnauthorized: false
-    };
+    const credentials = Buffer.from(
+        `${process.env.ONUM_USERNAME}:${process.env.ONUM_PASSWORD}`
+      ).toString('base64');
+
+      const options = {
+        hostname: onumUrl.hostname,
+        port: onumUrl.port || 8088,
+        path: onumUrl.pathname,
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload)
+        },
+        rejectUnauthorized: false
+      };
 
     const req = https.request(options, (res) => {
       let responseData = '';
