@@ -655,19 +655,19 @@
         }).join('')}
       </ul>`;
     }
-
 function renderMitre(mitre) {
   if (!mitre) return '<p class="field-value">None identified</p>';
 
   // Handle array of objects with tactic/techniques structure
   if (Array.isArray(mitre)) {
+    // Check if items are objects with tactic/techniques keys
     if (mitre.length > 0 && typeof mitre[0] === 'object') {
       let html = '';
       mitre.forEach(item => {
         if (item.tactic) {
           html += `
-            <div style="margin-bottom:12px;">
-              <div style="color:#ffffff; font-size:0.85rem;
+            <div style="margin-bottom: 12px;">
+              <div style="color:#ffffff; font-size:0.85rem; 
                 font-weight:700; margin-bottom:6px;">
                 ${item.tactic}
               </div>
@@ -678,7 +678,10 @@ function renderMitre(mitre) {
               </div>
             </div>`;
         } else {
-          html += `<span class="mitre-tag">${JSON.stringify(item)}</span>`;
+          // Plain object — stringify it
+          html += `<span class="mitre-tag">
+            ${JSON.stringify(item)}
+          </span>`;
         }
       });
       return html;
