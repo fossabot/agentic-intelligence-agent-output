@@ -566,46 +566,59 @@
   </div>
 
   <script>
+  const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const outputContent = document.getElementById('output-content');
+    const outputContainer = document.getElementById('output-container');
+    const timestampEl = document.getElementById('timestamp');
+    const historyList = document.getElementById('history-list');
+    let updateHistory = [];
+    let ablyInitialized = false;
+
+    // ============================================================
+    // PASSWORD PROTECTION — server side, no password in this file
+    // ============================================================
+
     async function checkPassword() {
-    const input = document.getElementById('password-input').value;
-    const error = document.getElementById('password-error');
-    const btn = document.querySelector('.password-btn');
+      const input = document.getElementById('password-input').value;
+      const error = document.getElementById('password-error');
+      const btn = document.querySelector('.password-btn');
 
-    if (!input) return;
+      if (!input) return;
 
-    // Disable button while checking
-    btn.textContent = 'Checking...';
-    btn.disabled = true;
+      btn.textContent = 'Checking...';
+      btn.disabled = true;
 
-    try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: input })
-      });
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: input })
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (response.ok && data.success) {
-        sessionStorage.setItem('authenticated', 'true');
-        document.getElementById('password-screen').classList.add('hidden');
-        document.getElementById('app').classList.add('visible');
-        error.classList.remove('visible');
-        initApp();
-      } else {
+        if (response.ok && data.success) {
+          sessionStorage.setItem('authenticated', 'true');
+          document.getElementById('password-screen').classList.add('hidden');
+          document.getElementById('app').classList.add('visible');
+          error.classList.remove('visible');
+          initApp();
+        } else {
+          error.textContent = 'Incorrect password. Please try again.';
+          error.classList.add('visible');
+          document.getElementById('password-input').value = '';
+          document.getElementById('password-input').focus();
+        }
+      } catch (err) {
+        error.textContent = 'Connection error. Please try again.';
         error.classList.add('visible');
-        document.getElementById('password-input').value = '';
-        document.getElementById('password-input').focus();
+      } finally {
+        btn.textContent = 'Access Dashboard';
+        btn.disabled = false;
       }
-    } catch (err) {
-      error.textContent = 'Connection error. Please try again.';
-      error.classList.add('visible');
-    } finally {
-      btn.textContent = 'Access Dashboard';
-      btn.disabled = false;
     }
-  }
-    
+
     function logout() {
       sessionStorage.removeItem('authenticated');
       document.getElementById('password-screen').classList.remove('hidden');
@@ -659,61 +672,57 @@
         }).join('')}
       </ul>`;
     }
-function renderMitre(mitre) {
-  if (!mitre) return '<p class="field-value">None identified</p>';
 
-  // Handle array of objects with tactic/techniques structure
-  if (Array.isArray(mitre)) {
-    // Check if items are objects with tactic/techniques keys
-    if (mitre.length > 0 && typeof mitre[0] === 'object') {
-      let html = '';
-      mitre.forEach(item => {
-        if (item.tactic) {
-          html += `
-            <div style="margin-bottom: 12px;">
-              <div style="color:#ffffff; font-size:0.85rem; 
-                font-weight:700; margin-bottom:6px;">
-                ${item.tactic}
-              </div>
-              <div class="mitre-grid">
-                ${toArray(item.techniques).map(t =>
-                  `<span class="mitre-tag">${t}</span>`
-                ).join('')}
-              </div>
-            </div>`;
-        } else {
-          // Plain object — stringify it
-          html += `<span class="mitre-tag">
-            ${JSON.stringify(item)}
-          </span>`;
+    function renderMitre(mitre) {
+      if (!mitre) return '<p class="field-value">None identified</p>';
+
+      if (Array.isArray(mitre)) {
+        if (mitre.length > 0 && typeof mitre[0] === 'object') {
+          let html = '';
+          mitre.forEach(item => {
+            if (item.tactic) {
+              html += `
+                <div style="margin-bottom:12px;">
+                  <div style="color:#ffffff; font-size:0.85rem;
+                    font-weight:700; margin-bottom:6px;">
+                    ${item.tactic}
+                  </div>
+                  <div class="mitre-grid">
+                    ${toArray(item.techniques).map(t =>
+                      `<span class="mitre-tag">${t}</span>`
+                    ).join('')}
+                  </div>
+                </div>`;
+            } else {
+              html += `<span class="mitre-tag">
+                ${JSON.stringify(item)}
+              </span>`;
+            }
+          });
+          return html;
         }
-      });
-      return html;
+        return `<div class="mitre-grid">
+          ${mitre.map(item =>
+            `<span class="mitre-tag">${item}</span>`
+          ).join('')}
+        </div>`;
+      }
+
+      if (typeof mitre === 'object') {
+        return `<div class="mitre-grid">
+          ${Object.entries(mitre).map(([k, v]) =>
+            `<span class="mitre-tag">${k}: ${v}</span>`
+          ).join('')}
+        </div>`;
+      }
+
+      return `<div class="mitre-grid">
+        ${String(mitre).split(',').map(s =>
+          `<span class="mitre-tag">${s.trim()}</span>`
+        ).join('')}
+      </div>`;
     }
-    // Simple array of strings
-    return `<div class="mitre-grid">
-      ${mitre.map(item =>
-        `<span class="mitre-tag">${item}</span>`
-      ).join('')}
-    </div>`;
-  }
 
-  // Object with key/value pairs
-  if (typeof mitre === 'object') {
-    return `<div class="mitre-grid">
-      ${Object.entries(mitre).map(([k, v]) =>
-        `<span class="mitre-tag">${k}: ${v}</span>`
-      ).join('')}
-    </div>`;
-  }
-
-  // Plain string
-  return `<div class="mitre-grid">
-    ${String(mitre).split(',').map(s =>
-      `<span class="mitre-tag">${s.trim()}</span>`
-    ).join('')}
-  </div>`;
-}
     function renderEvidence(evidence) {
       if (!evidence) return '<p class="field-value">No evidence provided</p>';
       if (typeof evidence === 'string') {
@@ -737,6 +746,7 @@ function renderMitre(mitre) {
       html += '</div>';
       return html;
     }
+
     function renderThreatActors(actors) {
       const arr = toArray(actors);
       if (!arr.length) return '<p class="field-value">None identified</p>';
@@ -798,7 +808,6 @@ function renderMitre(mitre) {
           </div>`;
       });
 
-      // Render remaining keys not in our list
       const handledKeys = sections.map(s => s.key);
       Object.entries(actions).forEach(([key, value]) => {
         if (handledKeys.includes(key)) return;
@@ -949,13 +958,11 @@ function renderMitre(mitre) {
     function renderReport(data) {
       let html = '';
 
-      // 1. Executive Summary — always first
       const execKey = [
         'executive_summary', 'exec_summary', 'summary'
       ].find(k => data[k]);
       if (execKey) html += renderExecutiveSummary(data[execKey]);
 
-      // 2. Risk Findings — always second
       const riskKey = [
         'risk_findings', 'risks', 'findings', 'risk_assessment'
       ].find(k => data[k] && toArray(data[k]).length);
@@ -970,7 +977,6 @@ function renderMitre(mitre) {
           </div>`;
       }
 
-      // 3. Threat Actors — always third
       const actorKey = [
         'threat_actors', 'adversaries', 'actors'
       ].find(k => data[k] && toArray(data[k]).length);
@@ -982,7 +988,6 @@ function renderMitre(mitre) {
           </div>`;
       }
 
-      // 4. MITRE ATT&CK Summary — always fourth
       const mitreKey = [
         'mitre_attack_summary', 'mitre_attack',
         'mitre', 'attack_summary'
@@ -995,7 +1000,6 @@ function renderMitre(mitre) {
           </div>`;
       }
 
-      // 5. Recommended Actions — always fifth
       const actionKey = [
         'recommended_actions', 'recommendations', 'action_plan'
       ].find(k => data[k]);
@@ -1007,7 +1011,6 @@ function renderMitre(mitre) {
           </div>`;
       }
 
-      // 6. IOCs
       const iocKey = [
         'indicators_of_compromise', 'iocs', 'indicators'
       ].find(k => data[k]);
@@ -1021,7 +1024,6 @@ function renderMitre(mitre) {
           </div>`;
       }
 
-      // 7. Assessment Metadata — second to last
       const metaKey = [
         'assessment_metadata', 'metadata', 'report_metadata'
       ].find(k => data[k]);
@@ -1046,7 +1048,6 @@ function renderMitre(mitre) {
         html += `</div>`;
       }
 
-      // 8. Analyst Notes — always last
       const noteKey = [
         'analyst_notes', 'notes',
         'analyst_note', 'analysis_notes'
@@ -1088,15 +1089,10 @@ function renderMitre(mitre) {
       }, 300);
     }
 
-    // ============================================================
-    // MAIN APP INITIALIZATION
-    // ============================================================
-
     function initApp() {
       if (ablyInitialized) return;
       ablyInitialized = true;
 
-      // Load last report from Redis
       fetch('/api/report')
         .then(r => r.json())
         .then(({ report }) => {
@@ -1107,7 +1103,6 @@ function renderMitre(mitre) {
         })
         .catch(err => console.log('Could not load last report:', err));
 
-      // Initialize Ably
       const ably = new Ably.Realtime({ authUrl: '/api/auth' });
       const channel = ably.channels.get('agent-channel');
 
@@ -1126,7 +1121,6 @@ function renderMitre(mitre) {
         statusText.textContent = 'Connection error';
       });
 
-      // Listen for live updates
       channel.subscribe('agent-update', (message) => {
         let data = message.data;
         if (typeof data === 'string') {
@@ -1136,7 +1130,6 @@ function renderMitre(mitre) {
         statusDot.className = 'receiving';
         statusText.textContent = 'Receiving update...';
 
-        // Save to history
         if (outputContent.innerText.trim() &&
             !outputContent.innerText.includes('Waiting')) {
           updateHistory.unshift({
@@ -1163,7 +1156,7 @@ function renderMitre(mitre) {
           ${item.preview}
         </div>
       `).join('');
-    }
+    }  
   </script>
 
 </body>
