@@ -17,6 +17,85 @@
       padding: 20px;
     }
 
+    /* ============ PASSWORD SCREEN ============ */
+    #password-screen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #0f1117;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    #password-screen.hidden { display: none; }
+
+    .password-card {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .password-card h2 {
+      color: #ffffff;
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+    }
+
+    .password-card p {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+
+    .password-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: #0f1117;
+      border: 1px solid #2a2d3a;
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 1rem;
+      margin-bottom: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .password-input:focus { border-color: #a78bfa; }
+
+    .password-btn {
+      width: 100%;
+      padding: 12px;
+      background: #a78bfa;
+      color: #0f1117;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .password-btn:hover { background: #9061f9; }
+
+    .password-error {
+      color: #ef4444;
+      font-size: 0.85rem;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .password-error.visible { display: block; }
+
+    /* ============ MAIN APP ============ */
+    #app { display: none; }
+    #app.visible { display: block; }
+
     header {
       display: flex;
       align-items: center;
@@ -29,6 +108,28 @@
     }
 
     header h1 { font-size: 1.4rem; color: #ffffff; }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    #logout-btn {
+      background: none;
+      border: 1px solid #2a2d3a;
+      color: #666;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+
+    #logout-btn:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
 
     #status-indicator {
       display: flex;
@@ -124,10 +225,7 @@
       margin-bottom: 16px;
     }
 
-    .priority-list {
-      list-style: none;
-      padding: 0;
-    }
+    .priority-list { list-style: none; padding: 0; }
 
     .priority-item {
       padding: 8px 12px;
@@ -235,11 +333,7 @@
       line-height: 1.6;
     }
 
-    .field-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
+    .field-list { list-style: none; padding: 0; margin: 0; }
 
     .field-list li {
       padding: 6px 0 6px 16px;
@@ -352,9 +446,7 @@
 
     .rec-list li:last-child { border-bottom: none; }
 
-    .rec-section {
-      margin-bottom: 16px;
-    }
+    .rec-section { margin-bottom: 16px; }
 
     .rec-section-title {
       font-size: 0.85rem;
@@ -423,30 +515,63 @@
 </head>
 <body>
 
-  <header>
-    <h1>🛡️🤖 Agentic Intelligence Agent's Live Output 🔎📊/h1>
-    <div id="status-indicator">
-      <div id="status-dot"></div>
-      <span id="status-text">Connecting...</span>
-    </div>
-  </header>
-
-  <div id="timestamp">Waiting for first update...</div>
-
-  <div id="output-container">
-    <div id="output-content">
-      <p style="color:#444; text-align:center; padding:60px 0">
-        ⏳ Waiting for agent output...
-      </p>
+  <!-- PASSWORD SCREEN -->
+  <div id="password-screen">
+    <div class="password-card">
+      <h2>🛡️🤖 Agentic Intelligence Agent's Live Output 🔎📊</h2>
+      <p>Enter your access password to continue</p>
+      <input
+        type="password"
+        id="password-input"
+        class="password-input"
+        placeholder="Password"
+        autocomplete="current-password"
+      />
+      <button class="password-btn" onclick="checkPassword()">
+        Access Dashboard
+      </button>
+      <div id="password-error" class="password-error">
+        Incorrect password. Please try again.
+      </div>
     </div>
   </div>
 
-  <div class="history-section">
-    <h3>Previous Updates</h3>
-    <div id="history-list"></div>
+  <!-- MAIN APP -->
+  <div id="app">
+    <header>
+      <h1>🔍 Intelligence Analyst Agent</h1>
+      <div class="header-right">
+        <div id="status-indicator">
+          <div id="status-dot"></div>
+          <span id="status-text">Connecting...</span>
+        </div>
+        <button id="logout-btn" onclick="logout()">Logout</button>
+      </div>
+    </header>
+
+    <div id="timestamp">Waiting for first update...</div>
+
+    <div id="output-container">
+      <div id="output-content">
+        <p style="color:#444; text-align:center; padding:60px 0">
+          ⏳ Waiting for agent output...
+        </p>
+      </div>
+    </div>
+
+    <div class="history-section">
+      <h3>Previous Updates</h3>
+      <div id="history-list"></div>
+    </div>
   </div>
 
   <script>
+    // ============================================================
+    // PASSWORD — change this to whatever you want
+    // ============================================================
+    const APP_PASSWORD = 'CrowdStrike2026';
+    // ============================================================
+
     const statusDot = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
     const outputContent = document.getElementById('output-content');
@@ -454,24 +579,48 @@
     const timestampEl = document.getElementById('timestamp');
     const historyList = document.getElementById('history-list');
     let updateHistory = [];
+    let ablyInitialized = false;
 
-    const ably = new Ably.Realtime({ authUrl: '/api/auth' });
-    const channel = ably.channels.get('agent-channel');
+    // ============================================================
+    // PASSWORD PROTECTION
+    // ============================================================
 
-    ably.connection.on('connected', () => {
-      statusDot.className = 'connected';
-      statusText.textContent = 'Connected — Listening for updates';
-    });
+    function checkPassword() {
+      const input = document.getElementById('password-input').value;
+      const error = document.getElementById('password-error');
 
-    ably.connection.on('disconnected', () => {
-      statusDot.className = '';
-      statusText.textContent = 'Disconnected';
-    });
+      if (input === APP_PASSWORD) {
+        sessionStorage.setItem('authenticated', 'true');
+        document.getElementById('password-screen').classList.add('hidden');
+        document.getElementById('app').classList.add('visible');
+        error.classList.remove('visible');
+        initApp();
+      } else {
+        error.classList.add('visible');
+        document.getElementById('password-input').value = '';
+        document.getElementById('password-input').focus();
+      }
+    }
 
-    ably.connection.on('failed', () => {
-      statusDot.className = 'error';
-      statusText.textContent = 'Connection error';
-    });
+    function logout() {
+      sessionStorage.removeItem('authenticated');
+      document.getElementById('password-screen').classList.remove('hidden');
+      document.getElementById('app').classList.remove('visible');
+      document.getElementById('password-input').value = '';
+    }
+
+    // Allow Enter key to submit password
+    document.getElementById('password-input')
+      .addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') checkPassword();
+      });
+
+    // Check if already authenticated (page refresh)
+    if (sessionStorage.getItem('authenticated') === 'true') {
+      document.getElementById('password-screen').classList.add('hidden');
+      document.getElementById('app').classList.add('visible');
+      initApp();
+    }
 
     // ============================================================
     // HELPER FUNCTIONS
@@ -500,7 +649,8 @@
       if (!arr.length) return '<p class="field-value">None identified</p>';
       return `<ul class="field-list">
         ${arr.map(item => {
-          const text = typeof item === 'object' ? JSON.stringify(item) : item;
+          const text = typeof item === 'object'
+            ? JSON.stringify(item) : item;
           return `<li>${text}</li>`;
         }).join('')}
       </ul>`;
@@ -530,12 +680,16 @@
       let html = '<div class="evidence-grid">';
       for (const [key, value] of Object.entries(evidence)) {
         if (!value || (Array.isArray(value) && !value.length)) continue;
-        const label = key.replace(/_/g, ' ').replace(/^./, s => s.toUpperCase());
+        const label = key
+          .replace(/_/g, ' ')
+          .replace(/^./, s => s.toUpperCase());
         const items = toArray(value);
         html += `
           <div class="evidence-block">
             <div class="evidence-block-title">${label}</div>
-            ${items.map(item => `<div class="ioc-item">${item}</div>`).join('')}
+            ${items.map(item =>
+              `<div class="ioc-item">${item}</div>`
+            ).join('')}
           </div>`;
       }
       html += '</div>';
@@ -545,7 +699,9 @@
     function renderThreatActors(actors) {
       const arr = toArray(actors);
       if (!arr.length) return '<p class="field-value">None identified</p>';
-      return arr.map(a => `<span class="actor-tag">🎭 ${a}</span>`).join('');
+      return arr.map(a =>
+        `<span class="actor-tag">🎭 ${a}</span>`
+      ).join('');
     }
 
     function renderRecommendations(recs) {
@@ -561,11 +717,31 @@
       if (Array.isArray(actions)) return renderRecommendations(actions);
 
       const sections = [
-        { key: 'immediate_24_48_hours', label: '🔴 Immediate (24-48 Hours)', cls: 'critical-rec' },
-        { key: 'immediate_critical_24_48_hours', label: '🔴 Immediate Critical (24-48 Hours)', cls: 'critical-rec' },
-        { key: 'high_priority_7_days', label: '🟡 High Priority (7 Days)', cls: 'high-rec' },
-        { key: 'medium_priority_30_days', label: '🔵 Medium Priority (30 Days)', cls: 'medium-rec' },
-        { key: 'ongoing_continuous', label: '🟢 Ongoing / Continuous', cls: 'ongoing-rec' },
+        {
+          key: 'immediate_24_48_hours',
+          label: '🔴 Immediate (24-48 Hours)',
+          cls: 'critical-rec'
+        },
+        {
+          key: 'immediate_critical_24_48_hours',
+          label: '🔴 Immediate Critical (24-48 Hours)',
+          cls: 'critical-rec'
+        },
+        {
+          key: 'high_priority_7_days',
+          label: '🟡 High Priority (7 Days)',
+          cls: 'high-rec'
+        },
+        {
+          key: 'medium_priority_30_days',
+          label: '🔵 Medium Priority (30 Days)',
+          cls: 'medium-rec'
+        },
+        {
+          key: 'ongoing_continuous',
+          label: '🟢 Ongoing / Continuous',
+          cls: 'ongoing-rec'
+        },
       ];
 
       let html = '';
@@ -581,11 +757,13 @@
           </div>`;
       });
 
-      // Render any remaining keys not in our list
+      // Render remaining keys not in our list
       const handledKeys = sections.map(s => s.key);
       Object.entries(actions).forEach(([key, value]) => {
         if (handledKeys.includes(key)) return;
-        const label = key.replace(/_/g, ' ').replace(/^./, s => s.toUpperCase());
+        const label = key
+          .replace(/_/g, ' ')
+          .replace(/^./, s => s.toUpperCase());
         const items = toArray(value);
         if (!items.length) return;
         html += `
@@ -605,34 +783,37 @@
       if (!arr.length) return '';
       return `<ul class="priority-list">
         ${arr.map(item => {
-          const text = typeof item === 'string' ? item : JSON.stringify(item);
+          const text = typeof item === 'string'
+            ? item : JSON.stringify(item);
           const ratingClass = getRatingClass(text);
           return `<li class="priority-item ${ratingClass}">${text}</li>`;
         }).join('')}
       </ul>`;
     }
 
-    // ============================================================
-    // SECTION RENDERERS
-    // ============================================================
-
     function renderExecutiveSummary(exec) {
       if (!exec) return '';
-
-      const timestamp = exec.analysis_timestamp || exec.analysis_date ||
-                        exec.analysis_date_time || exec.timestamp ||
+      const timestamp = exec.analysis_timestamp ||
+                        exec.analysis_date ||
+                        exec.analysis_date_time ||
+                        exec.timestamp ||
                         exec.report_date || '';
-      const published = exec.report_published || exec.published ||
-                        exec.date_published || exec.report_time || '';
-      const overview = exec.overview || exec.summary || exec.description || '';
-      const priorities = exec.highest_priority_risks || exec.priority_risks ||
+      const published = exec.report_published ||
+                        exec.published ||
+                        exec.date_published ||
+                        exec.report_time || '';
+      const overview = exec.overview ||
+                       exec.summary ||
+                       exec.description || '';
+      const priorities = exec.highest_priority_risks ||
+                         exec.priority_risks ||
                          exec.priorities || [];
-      const keyFindings = exec.key_findings || exec.findings || [];
+      const keyFindings = exec.key_findings ||
+                          exec.findings || [];
 
       return `
         <div class="section-card">
           <div class="section-title">📋 Executive Summary</div>
-
           <div class="exec-grid">
             <div class="exec-meta">
               <div class="exec-meta-label">Analysis Date</div>
@@ -643,17 +824,14 @@
               <div class="exec-meta-value">${published || 'N/A'}</div>
             </div>
           </div>
-
           ${overview ? `
             <div class="field-label">Overview</div>
             <p class="overview-text">${overview}</p>
           ` : ''}
-
           ${toArray(priorities).length ? `
             <div class="field-label">Highest Priority Risks</div>
             ${renderPriorityRisks(priorities)}
           ` : ''}
-
           ${toArray(keyFindings).length ? `
             <div class="field-label">Key Findings</div>
             ${renderList(keyFindings)}
@@ -662,15 +840,22 @@
     }
 
     function renderRiskFinding(risk, index) {
-      // Handle both nested and flat structures
-      const title = risk.risk_title || risk.title || `Risk Finding ${index + 1}`;
-      const rating = risk.rating || risk.severity || risk.risk_rating || '';
+      const title = risk.risk_title ||
+                    risk.title ||
+                    `Risk Finding ${index + 1}`;
+      const rating = risk.rating ||
+                     risk.severity ||
+                     risk.risk_rating || '';
       const ratingClass = getRatingClass(rating);
       const description = risk.description || risk.details || '';
-      const actors = risk.threat_actors || risk.threat_actor ||
-                     risk.actors || risk.adversaries || [];
-      const mitre = risk.mitre_attack || risk.mitre ||
-                    risk.mitre_attack_techniques || risk.attack_techniques || [];
+      const actors = risk.threat_actors ||
+                     risk.threat_actor ||
+                     risk.actors ||
+                     risk.adversaries || [];
+      const mitre = risk.mitre_attack ||
+                    risk.mitre ||
+                    risk.mitre_attack_techniques ||
+                    risk.attack_techniques || [];
       const evidence = risk.evidence || risk.indicators || null;
       const impact = risk.organizational_impact || risk.impact || '';
       const recs = risk.recommendations || risk.remediation || [];
@@ -679,35 +864,40 @@
         <div class="risk-card">
           <div class="risk-header">
             <div class="risk-title">⚠️ ${title}</div>
-            ${rating ? `<span class="rating-badge rating-${ratingClass}">${rating}</span>` : ''}
+            ${rating ? `
+              <span class="rating-badge rating-${ratingClass}">
+                ${rating}
+              </span>` : ''}
           </div>
           <hr class="risk-divider"/>
-
           ${toArray(actors).length ? `
             <div class="field-label">🎭 Threat Actors</div>
-            <div style="margin-bottom: 8px;">${renderThreatActors(actors)}</div>
+            <div style="margin-bottom:8px">
+              ${renderThreatActors(actors)}
+            </div>
           ` : ''}
-
           ${description ? `
             <div class="field-label">📝 Description</div>
-            <p class="field-value" style="margin-bottom:8px">${description}</p>
+            <p class="field-value" style="margin-bottom:8px">
+              ${description}
+            </p>
           ` : ''}
-
           ${toArray(mitre).length ? `
             <div class="field-label">🎯 MITRE ATT&CK</div>
-            <div style="margin-bottom: 8px;">${renderMitre(mitre)}</div>
+            <div style="margin-bottom:8px">${renderMitre(mitre)}</div>
           ` : ''}
-
           ${evidence ? `
             <div class="field-label">🔬 Evidence</div>
-            <div style="margin-bottom: 8px;">${renderEvidence(evidence)}</div>
+            <div style="margin-bottom:8px">
+              ${renderEvidence(evidence)}
+            </div>
           ` : ''}
-
           ${impact ? `
             <div class="field-label">💥 Organizational Impact</div>
-            <p class="field-value" style="margin-bottom:8px">${impact}</p>
+            <p class="field-value" style="margin-bottom:8px">
+              ${impact}
+            </p>
           ` : ''}
-
           ${toArray(recs).length ? `
             <div class="field-label">✅ Recommendations</div>
             ${renderRecommendations(recs)}
@@ -715,158 +905,215 @@
         </div>`;
     }
 
-    // ============================================================
-    // MAIN REPORT RENDERER
-    // ============================================================
-
     function renderReport(data) {
-  let html = '';
+      let html = '';
 
-  // STRICT ORDER — always render in this sequence
-  // regardless of JSON key order
+      // 1. Executive Summary — always first
+      const execKey = [
+        'executive_summary', 'exec_summary', 'summary'
+      ].find(k => data[k]);
+      if (execKey) html += renderExecutiveSummary(data[execKey]);
 
-  // 1. Executive Summary — always first
-  const execKeys = ['executive_summary', 'exec_summary', 'summary'];
-  const execKey = execKeys.find(k => data[k]);
-  if (execKey) {
-    html += renderExecutiveSummary(data[execKey]);
-  }
-
-  // 2. Risk Findings — always second
-  const riskKeys = ['risk_findings', 'risks', 'findings', 'risk_assessment'];
-  const riskKey = riskKeys.find(k => data[k] && toArray(data[k]).length);
-  if (riskKey) {
-    const risks = toArray(data[riskKey]);
-    html += `
-      <div class="section-card">
-        <div class="section-title">🚨 Risk Findings (${risks.length})</div>
-        ${risks.map((risk, i) => renderRiskFinding(risk, i)).join('')}
-      </div>`;
-  }
-
-  // 3. Threat Actors — always third
-  const actorKeys = ['threat_actors', 'adversaries', 'actors'];
-  const actorKey = actorKeys.find(k => data[k] && toArray(data[k]).length);
-  if (actorKey) {
-    html += `
-      <div class="section-card">
-        <div class="section-title">🎭 Threat Actors</div>
-        <div>${renderThreatActors(data[actorKey])}</div>
-      </div>`;
-  }
-
-  // 4. MITRE ATT&CK Summary — always fourth
-  const mitreKeys = ['mitre_attack_summary', 'mitre_attack', 'mitre', 'attack_summary'];
-  const mitreKey = mitreKeys.find(k => data[k] && toArray(data[k]).length);
-  if (mitreKey) {
-    html += `
-      <div class="section-card">
-        <div class="section-title">🎯 MITRE ATT&CK Summary</div>
-        ${renderMitre(data[mitreKey])}
-      </div>`;
-  }
-
-  // 5. Recommended Actions — always fifth
-  const actionKeys = ['recommended_actions', 'recommendations', 'action_plan'];
-  const actionKey = actionKeys.find(k => data[k]);
-  if (actionKey) {
-    html += `
-      <div class="section-card">
-        <div class="section-title">✅ Recommended Actions</div>
-        ${renderRecommendedActions(data[actionKey])}
-      </div>`;
-  }
-
-  // 6. Indicators of Compromise
-  const iocKeys = ['indicators_of_compromise', 'iocs', 'indicators'];
-  const iocKey = iocKeys.find(k => data[k]);
-  if (iocKey) {
-    html += `
-      <div class="section-card">
-        <div class="section-title">🔬 Indicators of Compromise</div>
-        ${renderEvidence(data[iocKey])}
-      </div>`;
-  }
-
-  // 7. Assessment Metadata — second to last
-  const metaKeys = ['assessment_metadata', 'metadata', 'report_metadata'];
-  const metaKey = metaKeys.find(k => data[k]);
-  if (metaKey) {
-    const meta = data[metaKey];
-    html += `<div class="section-card">
-      <div class="section-title">📊 Assessment Metadata</div>`;
-    for (const [key, value] of Object.entries(meta)) {
-      const label = key
-        .replace(/_/g, ' ')
-        .replace(/^./, s => s.toUpperCase());
-      html += `<div class="field-label">${label}</div>`;
-      if (Array.isArray(value)) {
-        html += renderList(value);
-      } else if (typeof value === 'object') {
-        html += renderEvidence(value);
-      } else {
-        html += `<p class="field-value">${value}</p>`;
+      // 2. Risk Findings — always second
+      const riskKey = [
+        'risk_findings', 'risks', 'findings', 'risk_assessment'
+      ].find(k => data[k] && toArray(data[k]).length);
+      if (riskKey) {
+        const risks = toArray(data[riskKey]);
+        html += `
+          <div class="section-card">
+            <div class="section-title">
+              🚨 Risk Findings (${risks.length})
+            </div>
+            ${risks.map((r, i) => renderRiskFinding(r, i)).join('')}
+          </div>`;
       }
+
+      // 3. Threat Actors — always third
+      const actorKey = [
+        'threat_actors', 'adversaries', 'actors'
+      ].find(k => data[k] && toArray(data[k]).length);
+      if (actorKey) {
+        html += `
+          <div class="section-card">
+            <div class="section-title">🎭 Threat Actors</div>
+            <div>${renderThreatActors(data[actorKey])}</div>
+          </div>`;
+      }
+
+      // 4. MITRE ATT&CK Summary — always fourth
+      const mitreKey = [
+        'mitre_attack_summary', 'mitre_attack',
+        'mitre', 'attack_summary'
+      ].find(k => data[k] && toArray(data[k]).length);
+      if (mitreKey) {
+        html += `
+          <div class="section-card">
+            <div class="section-title">🎯 MITRE ATT&CK Summary</div>
+            ${renderMitre(data[mitreKey])}
+          </div>`;
+      }
+
+      // 5. Recommended Actions — always fifth
+      const actionKey = [
+        'recommended_actions', 'recommendations', 'action_plan'
+      ].find(k => data[k]);
+      if (actionKey) {
+        html += `
+          <div class="section-card">
+            <div class="section-title">✅ Recommended Actions</div>
+            ${renderRecommendedActions(data[actionKey])}
+          </div>`;
+      }
+
+      // 6. IOCs
+      const iocKey = [
+        'indicators_of_compromise', 'iocs', 'indicators'
+      ].find(k => data[k]);
+      if (iocKey) {
+        html += `
+          <div class="section-card">
+            <div class="section-title">
+              🔬 Indicators of Compromise
+            </div>
+            ${renderEvidence(data[iocKey])}
+          </div>`;
+      }
+
+      // 7. Assessment Metadata — second to last
+      const metaKey = [
+        'assessment_metadata', 'metadata', 'report_metadata'
+      ].find(k => data[k]);
+      if (metaKey) {
+        const meta = data[metaKey];
+        html += `
+          <div class="section-card">
+            <div class="section-title">📊 Assessment Metadata</div>`;
+        for (const [key, value] of Object.entries(meta)) {
+          const label = key
+            .replace(/_/g, ' ')
+            .replace(/^./, s => s.toUpperCase());
+          html += `<div class="field-label">${label}</div>`;
+          if (Array.isArray(value)) {
+            html += renderList(value);
+          } else if (typeof value === 'object') {
+            html += renderEvidence(value);
+          } else {
+            html += `<p class="field-value">${value}</p>`;
+          }
+        }
+        html += `</div>`;
+      }
+
+      // 8. Analyst Notes — always last
+      const noteKey = [
+        'analyst_notes', 'notes',
+        'analyst_note', 'analysis_notes'
+      ].find(k => data[k]);
+      if (noteKey) {
+        html += `
+          <div class="section-card">
+            <div class="section-title">📝 Analyst Notes</div>
+            <p class="overview-text">${data[noteKey]}</p>
+          </div>`;
+      }
+
+      return html || '<p style="color:#444">No data to display</p>';
     }
-    html += `</div>`;
-  }
 
-  // 8. Analyst Notes — always last
-  const noteKeys = ['analyst_notes', 'notes', 'analyst_note', 'analysis_notes'];
-  const noteKey = noteKeys.find(k => data[k]);
-  if (noteKey) {
-    html += `
-      <div class="section-card">
-        <div class="section-title">📝 Analyst Notes</div>
-        <p class="overview-text">${data[noteKey]}</p>
-      </div>`;
-  }
-
-  return html || '<p style="color:#444">No data to display</p>';
-}
-    // ============================================================
-    // ABLY MESSAGE HANDLER
-    // ============================================================
-
-    channel.subscribe('agent-update', (message) => {
-      let data = message.data;
-      if (typeof data === 'string') {
-        try { data = JSON.parse(data); } catch (e) { return; }
-      }
-
-      statusDot.className = 'receiving';
-      statusText.textContent = 'Receiving update...';
+    function displayReport(data) {
       outputContainer.classList.add('updating');
-
-      if (outputContent.innerText.trim() &&
-          !outputContent.innerText.includes('Waiting')) {
-        updateHistory.unshift({
-          timestamp: timestampEl.textContent,
-          preview: outputContent.innerText.substring(0, 80) + '...'
-        });
-        if (updateHistory.length > 5) updateHistory.pop();
-        renderHistory();
-      }
-
       setTimeout(() => {
         try {
           const parsed = typeof data.content === 'object'
             ? data.content
             : JSON.parse(data.content);
-          outputContent.innerHTML = DOMPurify.sanitize(renderReport(parsed));
+          outputContent.innerHTML = DOMPurify.sanitize(
+            renderReport(parsed)
+          );
         } catch (e) {
-          outputContent.innerHTML = `<pre style="color:#c0c0c0; overflow-x:auto">${JSON.stringify(data.content, null, 2)}</pre>`;
+          outputContent.innerHTML = `
+            <pre style="color:#c0c0c0; overflow-x:auto">
+              ${JSON.stringify(data.content, null, 2)}
+            </pre>`;
         }
 
         const d = new Date(data.timestamp);
         timestampEl.textContent =
-          `Last updated: ${d.toLocaleTimeString()} on ${d.toLocaleDateString()}`;
+          `Last updated: ${d.toLocaleTimeString()} ` +
+          `on ${d.toLocaleDateString()}`;
 
-        statusDot.className = 'connected';
-        statusText.textContent = 'Connected — Listening for updates';
         outputContainer.classList.remove('updating');
       }, 300);
-    });
+    }
+
+    // ============================================================
+    // MAIN APP INITIALIZATION
+    // ============================================================
+
+    function initApp() {
+      if (ablyInitialized) return;
+      ablyInitialized = true;
+
+      // Load last report from Redis
+      fetch('/api/report')
+        .then(r => r.json())
+        .then(({ report }) => {
+          if (report) {
+            console.log('Loaded last report from storage');
+            displayReport(report);
+          }
+        })
+        .catch(err => console.log('Could not load last report:', err));
+
+      // Initialize Ably
+      const ably = new Ably.Realtime({ authUrl: '/api/auth' });
+      const channel = ably.channels.get('agent-channel');
+
+      ably.connection.on('connected', () => {
+        statusDot.className = 'connected';
+        statusText.textContent = 'Connected — Listening for updates';
+      });
+
+      ably.connection.on('disconnected', () => {
+        statusDot.className = '';
+        statusText.textContent = 'Disconnected';
+      });
+
+      ably.connection.on('failed', () => {
+        statusDot.className = 'error';
+        statusText.textContent = 'Connection error';
+      });
+
+      // Listen for live updates
+      channel.subscribe('agent-update', (message) => {
+        let data = message.data;
+        if (typeof data === 'string') {
+          try { data = JSON.parse(data); } catch (e) { return; }
+        }
+
+        statusDot.className = 'receiving';
+        statusText.textContent = 'Receiving update...';
+
+        // Save to history
+        if (outputContent.innerText.trim() &&
+            !outputContent.innerText.includes('Waiting')) {
+          updateHistory.unshift({
+            timestamp: timestampEl.textContent,
+            preview: outputContent.innerText.substring(0, 80) + '...'
+          });
+          if (updateHistory.length > 5) updateHistory.pop();
+          renderHistory();
+        }
+
+        displayReport(data);
+
+        setTimeout(() => {
+          statusDot.className = 'connected';
+          statusText.textContent = 'Connected — Listening for updates';
+        }, 600);
+      });
+    }
 
     function renderHistory() {
       historyList.innerHTML = updateHistory.map(item => `
@@ -880,3 +1127,4 @@
 
 </body>
 </html>
+
