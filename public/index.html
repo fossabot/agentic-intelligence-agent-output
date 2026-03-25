@@ -843,15 +843,39 @@
 
     function renderExecutiveSummary(exec) {
       if (!exec) return '';
-      const timestamp = exec.analysis_timestamp ||
-                        exec.analysis_date ||
-                        exec.analysis_date_time ||
-                        exec.timestamp ||
-                        exec.report_date || '';
-      const published = exec.report_published ||
-                        exec.published ||
-                        exec.date_published ||
-                        exec.report_time || '';
+      // Format datetime — add time if only date provided
+    function formatDateTime(val) {
+      if (!val) return 'N/A';
+      // If it looks like just a date (YYYY-MM-DD) add time
+      if (/^\d{4}-\d{2}-\d{2}$/.test(val.trim())) {
+        return `${val.trim()} 00:00:00 UTC`;
+      }
+      // If ISO format like 2026-03-25T00:00:00Z reformat nicely
+      if (val.includes('T')) {
+        try {
+          const d = new Date(val);
+          return d.toUTCString()
+            .replace('GMT', 'UTC');
+        } catch {
+          return val;
+        }
+      }
+      return val;
+    }
+
+    const timestamp = formatDateTime(
+      exec.analysis_timestamp ||
+      exec.analysis_date ||
+      exec.analysis_date_time ||
+      exec.timestamp ||
+      exec.report_date || ''
+    );
+    const published = formatDateTime(
+      exec.report_published ||
+      exec.published ||
+      exec.date_published ||
+      exec.report_time || ''
+    );
       const overview = exec.overview ||
                        exec.summary ||
                        exec.description || '';
