@@ -656,22 +656,61 @@
       </ul>`;
     }
 
-    function renderMitre(mitre) {
-      if (!mitre) return '<p class="field-value">None identified</p>';
-      let items = [];
-      if (Array.isArray(mitre)) {
-        items = mitre;
-      } else if (typeof mitre === 'object') {
-        items = Object.entries(mitre).map(([k, v]) => `${k}: ${v}`);
-      } else {
-        items = String(mitre).split(',').map(s => s.trim());
-      }
-      if (!items.length) return '<p class="field-value">None identified</p>';
-      return `<div class="mitre-grid">
-        ${items.map(item => `<span class="mitre-tag">${item}</span>`).join('')}
-      </div>`;
-    }
+function renderMitre(mitre) {
+  if (!mitre) return '<p class="field-value">None identified</p>';
 
+  // Handle array of objects with tactic/techniques structure
+  if (Array.isArray(mitre)) {
+    // Check if items are objects with tactic/techniques keys
+    if (mitre.length > 0 && typeof mitre[0] === 'object') {
+      let html = '';
+      mitre.forEach(item => {
+        if (item.tactic) {
+          html += `
+            <div style="margin-bottom: 12px;">
+              <div style="color:#ffffff; font-size:0.85rem; 
+                font-weight:700; margin-bottom:6px;">
+                ${item.tactic}
+              </div>
+              <div class="mitre-grid">
+                ${toArray(item.techniques).map(t =>
+                  `<span class="mitre-tag">${t}</span>`
+                ).join('')}
+              </div>
+            </div>`;
+        } else {
+          // Plain object — stringify it
+          html += `<span class="mitre-tag">
+            ${JSON.stringify(item)}
+          </span>`;
+        }
+      });
+      return html;
+    }
+    // Simple array of strings
+    return `<div class="mitre-grid">
+      ${mitre.map(item =>
+        `<span class="mitre-tag">${item}</span>`
+      ).join('')}
+    </div>`;
+  }
+
+  // Object with key/value pairs
+  if (typeof mitre === 'object') {
+    return `<div class="mitre-grid">
+      ${Object.entries(mitre).map(([k, v]) =>
+        `<span class="mitre-tag">${k}: ${v}</span>`
+      ).join('')}
+    </div>`;
+  }
+
+  // Plain string
+  return `<div class="mitre-grid">
+    ${String(mitre).split(',').map(s =>
+      `<span class="mitre-tag">${s.trim()}</span>`
+    ).join('')}
+  </div>`;
+}
     function renderEvidence(evidence) {
       if (!evidence) return '<p class="field-value">No evidence provided</p>';
       if (typeof evidence === 'string') {
