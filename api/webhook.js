@@ -331,6 +331,7 @@ function sendToOnum(content, timestamp) {
       .replace(/\\r/g, ' ')
       .replace(/\\t/g, ' ');
 
+    console.log('Onum token preview:', process.env.ONUM_TOKEN ? process.env.ONUM_TOKEN.substring(0, 20) + '...' : 'NOT SET');
     console.log('Sending to Onum...');
     console.log('Onum payload size:', payload.length, 'bytes');
     console.log('Onum preview:', payload.substring(0, 300));
