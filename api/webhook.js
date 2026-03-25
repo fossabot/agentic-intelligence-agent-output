@@ -426,6 +426,15 @@ module.exports = async function handler(req, res) {
     type = extracted.type;
 
     console.log('Content ready, type:', type);
+    // Override timestamps with actual server time
+    if (content.executive_summary) {
+      const serverTime = new Date().toISOString()
+        .replace('T', ' ')
+        .replace(/\.\d{3}Z/, ' UTC');
+      content.executive_summary.analysis_timestamp = serverTime;
+      content.executive_summary.report_published = serverTime;
+      console.log('Timestamps set to server time:', serverTime);
+    }
     console.log('Content keys:', Object.keys(content).join(', '));
 
   } catch (parseError) {
