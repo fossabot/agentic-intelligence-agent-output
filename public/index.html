@@ -843,9 +843,14 @@
     function formatDateTime(val) {
       if (!val) return 'N/A';
 
-      // Already has UTC label — use as is
+      // Already has UTC label
       if (typeof val === 'string' && 
           (val.includes('UTC') || val.includes('utc'))) {
+        // Check if time is midnight
+        const timePart = val.split(' ')[1] || '';
+        if (timePart.startsWith('00:00:00')) {
+          return `${val.split(' ')[0]} (time not specified)`;
+        }
         return val;
       }
 
@@ -857,9 +862,12 @@
           const date = parts[0];
           const time = parts[1] || '00:00:00';
           // If midnight — Claude didn't set a real time
-          if (time === '00:00:00' || time === '00:00:00.000') {
-            return `${date} (time not specified)`;
-          }
+          if (time === '00:00:00' || 
+            time === '00:00:00.000' ||
+            time.startsWith('00:00:00')) {
+          return `${date} (time not specified)`;
+        }
+
           // Trim milliseconds if present
           const timeClean = time.split('.')[0];
           return `${date} ${timeClean} UTC`;
