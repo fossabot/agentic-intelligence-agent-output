@@ -287,10 +287,18 @@ function flattenForOnum(obj, prefix = '') {
 
   for (const [key, value] of Object.entries(obj)) {
     const fieldName = prefix ? `${prefix}.${key}` : key;
-
-    if (value === null || value === undefined) {
+    
+  if (value === null || value === undefined) {
       result[fieldName] = '';
+    } else if (fieldName === 'risk_findings' && Array.isArray(value)) {
+      // Special handling for risk_findings — extract title and rating only
+      result[fieldName] = value.map(risk => {
+        const title = cleanString(risk.risk_title || 'Unknown');
+        const rating = cleanString(risk.rating || 'Unknown');
+        return `[${rating}] ${title}`;
+      }).join(' | ');
     } else if (Array.isArray(value)) {
+
       // Send as JSON array string
       result[fieldName] = JSON.stringify(
         value.map(item => {
