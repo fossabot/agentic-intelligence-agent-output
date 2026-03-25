@@ -291,13 +291,17 @@ function flattenForOnum(obj, prefix = '') {
     if (value === null || value === undefined) {
       result[fieldName] = '';
     } else if (Array.isArray(value)) {
-      result[fieldName] = value.map(item => {
-        if (typeof item === 'object') {
+      // Keep as JSON array string so Onum can unroll it
+       result[fieldName] = JSON.stringify(
+        value.map(item => {
+          if (typeof item === 'object') {
           return cleanString(JSON.stringify(item));
-        }
-        return cleanString(String(item));
-      }).join(' | ');
-    } else if (typeof value === 'object') {
+          }
+           return cleanString(String(item));
+        })
+      );
+    }
+ else if (typeof value === 'object') {
       const nested = flattenForOnum(value, fieldName);
       Object.assign(result, nested);
     } else if (typeof value === 'string') {
