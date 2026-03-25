@@ -305,7 +305,32 @@ function flattenForOnum(obj, prefix = '') {
       const nested = flattenForOnum(value, fieldName);
       Object.assign(result, nested);
     } else if (typeof value === 'string') {
-      result[fieldName] = cleanString(value);
+  const cleaned = cleanString(value);
+  // Split long text fields on | or sentence boundaries
+  if (cleaned.includes(' | ')) {
+    // Split on pipe separator into JSON array
+    const items = cleaned
+      .split(' | ')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+    result[fieldName] = JSON.stringify(items);
+  } else if (cleaned.length > 300 && (
+    fieldName.includes('overview') ||
+    fieldName.includes('description') ||
+    fieldName.includes('impact') ||
+    fieldName.includes('summary')
+  )) {
+    // Split long paragraphs on sentence boundaries
+    const sentences = cleaned
+      .split('. ')
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+      .map(s => s.endsWith('.') ? s : s + '.');
+    result[fieldName] = JSON.stringify(sentences);
+  } else {
+    result[fieldName] = cleaned;
+  }
+}
     } else {
       result[fieldName] = value;
     }
