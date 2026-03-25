@@ -899,7 +899,10 @@
         exec.report_published ||
         exec.published ||
         exec.date_published ||
-        exec.report_time || ''
+        exec.report_time ||
+        exec.analysis_timestamp ||
+        exec.analysis_date ||
+        exec.timestamp || ''
       );
       const overview = exec.overview ||
                        exec.summary ||
