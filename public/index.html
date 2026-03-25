@@ -566,40 +566,27 @@
   </div>
 
   <script>
-  function checkPassword() {
+    async function checkPassword() {
     const input = document.getElementById('password-input').value;
     const error = document.getElementById('password-error');
+    const btn = document.querySelector('.password-btn');
 
-    if (input === APP_PASSWORD) {
-      sessionStorage.setItem('authenticated', 'true');
-      document.getElementById('password-screen').classList.add('hidden');
-      document.getElementById('app').classList.add('visible');
-      error.classList.remove('visible');
-      initApp();
-    } else {
-      error.classList.add('visible');
-      document.getElementById('password-input').value = '';
-      document.getElementById('password-input').focus();
-    }
-}
-    const statusDot = document.getElementById('status-dot');
-    const statusText = document.getElementById('status-text');
-    const outputContent = document.getElementById('output-content');
-    const outputContainer = document.getElementById('output-container');
-    const timestampEl = document.getElementById('timestamp');
-    const historyList = document.getElementById('history-list');
-    let updateHistory = [];
-    let ablyInitialized = false;
+    if (!input) return;
 
-    // ============================================================
-    // PASSWORD PROTECTION
-    // ============================================================
+    // Disable button while checking
+    btn.textContent = 'Checking...';
+    btn.disabled = true;
 
-    function checkPassword() {
-      const input = document.getElementById('password-input').value;
-      const error = document.getElementById('password-error');
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: input })
+      });
 
-      if (input === APP_PASSWORD) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         sessionStorage.setItem('authenticated', 'true');
         document.getElementById('password-screen').classList.add('hidden');
         document.getElementById('app').classList.add('visible');
@@ -610,8 +597,15 @@
         document.getElementById('password-input').value = '';
         document.getElementById('password-input').focus();
       }
+    } catch (err) {
+      error.textContent = 'Connection error. Please try again.';
+      error.classList.add('visible');
+    } finally {
+      btn.textContent = 'Access Dashboard';
+      btn.disabled = false;
     }
-
+  }
+    
     function logout() {
       sessionStorage.removeItem('authenticated');
       document.getElementById('password-screen').classList.remove('hidden');
