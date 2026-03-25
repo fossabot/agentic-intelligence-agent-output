@@ -2,6 +2,7 @@
   "name": "claude-agent-output",
   "version": "1.0.0",
   "dependencies": {
-    "ably": "^1.2.40"
+    "ably": "^1.2.40",
+    "@upstash/redis": "^1.28.0"
   }
 }
