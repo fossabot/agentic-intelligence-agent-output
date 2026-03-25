@@ -879,21 +879,20 @@
 
     function renderExecutiveSummary(exec) {
       if (!exec) return '';
-      // Format datetime — add time if only date provided
 
-    const timestamp = formatDateTime(
-      exec.analysis_timestamp ||
-      exec.analysis_date ||
-      exec.analysis_date_time ||
-      exec.timestamp ||
-      exec.report_date || ''
-    );
-    const published = formatDateTime(
-      exec.report_published ||
-      exec.published ||
-      exec.date_published ||
-      exec.report_time || ''
-    );
+      const timestamp = formatDateTime(
+        exec.analysis_timestamp ||
+        exec.analysis_date ||
+        exec.analysis_date_time ||
+        exec.timestamp ||
+        exec.report_date || ''
+      );
+      const published = formatDateTime(
+        exec.report_published ||
+        exec.published ||
+        exec.date_published ||
+        exec.report_time || ''
+      );
       const overview = exec.overview ||
                        exec.summary ||
                        exec.description || '';
