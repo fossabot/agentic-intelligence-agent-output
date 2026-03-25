@@ -282,7 +282,7 @@ function cleanString(str) {
     .trim();
 }
 
-ffunction flattenForOnum(obj, prefix = '') {
+function flattenForOnum(obj, prefix = '') {
   const result = {};
 
   for (const [key, value] of Object.entries(obj)) {
@@ -326,18 +326,15 @@ ffunction flattenForOnum(obj, prefix = '') {
 function sendToOnum(content, timestamp) {
   return new Promise((resolve, reject) => {
 
-    // Flatten and clean all fields
     const flatContent = flattenForOnum(content);
 
-    // Build clean event
     const event = {
-      timestamp: timestamp,
       source: 'intelligence-analyst-agent',
       sourcetype: 'crowdstrike:intelligence:agent',
+      report_generated: timestamp,
       ...flatContent
     };
 
-    // Stringify with final newline cleanup
     let payload = JSON.stringify(event);
     payload = payload
       .replace(/\\n/g, ' ')
@@ -352,21 +349,21 @@ function sendToOnum(content, timestamp) {
     const onumUrl = new URL(process.env.ONUM_URL);
 
     const credentials = Buffer.from(
-        `${process.env.ONUM_USERNAME}:${process.env.ONUM_PASSWORD}`
-      ).toString('base64');
+      `${process.env.ONUM_USERNAME}:${process.env.ONUM_PASSWORD}`
+    ).toString('base64');
 
-      const options = {
-        hostname: onumUrl.hostname,
-        port: onumUrl.port || 8088,
-        path: onumUrl.pathname,
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(payload)
-        },
-        rejectUnauthorized: false
-      };
+    const options = {
+      hostname: onumUrl.hostname,
+      port: onumUrl.port || 8088,
+      path: onumUrl.pathname,
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      },
+      rejectUnauthorized: false
+    };
 
     const req = https.request(options, (res) => {
       let responseData = '';
@@ -468,7 +465,6 @@ module.exports = async function handler(req, res) {
     console.log('Sent to Onum ✅');
   } catch (onumError) {
     console.error('Onum send error:', onumError.message);
-    // Don't fail the request if Onum send fails
   }
 
   console.log(`All outputs completed at ${new Date().toISOString()}`);
