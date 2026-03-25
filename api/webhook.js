@@ -1,4 +1,11 @@
 const https = require('https');
+const { Redis } = require('@upstash/redis');
+
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
+
 
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -388,6 +395,39 @@ module.exports = async function handler(req, res) {
   if (!content) {
     return res.status(400).json({ error: 'No content provided' });
   }
+
+  const messageData = {
+    content: content,
+    type: type || 'json',
+    timestamp: new Date().toISOString()
+  };
+
+  // Save to Upstash Redis for persistence
+  try {
+    await redis.set('last_report', messageData, { ex: 86400 });
+    console.log('Report saved to Redis');
+  } catch (redisError) {
+    console.error('Redis save error:', redisError.message);
+    // Don't fail the request if save fails
+  }
+
+  // Publish to Ably
+  try {
+    await publishToAbly(
+      process.env.ABLY_API_KEY,
+      'agent-channel',
+      'agent-update',
+      messageData
+    );
+
+    console.log(`Successfully published at ${new Date().toISOString()}`);
+    return res.status(200).json({ success: true });
+
+  } catch (error) {
+    console.error('Publish error:', error.message);
+    return res.status(500).json({ error: error.message });
+  }
+
 
   try {
     const messageData = {
