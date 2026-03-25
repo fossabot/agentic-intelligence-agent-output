@@ -661,14 +661,13 @@ function renderMitre(mitre) {
 
   // Handle array of objects with tactic/techniques structure
   if (Array.isArray(mitre)) {
-    // Check if items are objects with tactic/techniques keys
     if (mitre.length > 0 && typeof mitre[0] === 'object') {
       let html = '';
       mitre.forEach(item => {
         if (item.tactic) {
           html += `
-            <div style="margin-bottom: 12px;">
-              <div style="color:#ffffff; font-size:0.85rem; 
+            <div style="margin-bottom:12px;">
+              <div style="color:#ffffff; font-size:0.85rem;
                 font-weight:700; margin-bottom:6px;">
                 ${item.tactic}
               </div>
@@ -679,10 +678,7 @@ function renderMitre(mitre) {
               </div>
             </div>`;
         } else {
-          // Plain object — stringify it
-          html += `<span class="mitre-tag">
-            ${JSON.stringify(item)}
-          </span>`;
+          html += `<span class="mitre-tag">${JSON.stringify(item)}</span>`;
         }
       });
       return html;
@@ -734,7 +730,6 @@ function renderMitre(mitre) {
       html += '</div>';
       return html;
     }
-
     function renderThreatActors(actors) {
       const arr = toArray(actors);
       if (!arr.length) return '<p class="field-value">None identified</p>';
