@@ -1227,21 +1227,81 @@ async function downloadPDF() {
     btn.textContent = '📄 Download PDF';
     btn.disabled = false;
   }
-}
+}async function downloadPDF() {
+  const btn = document.getElementById('pdf-btn');
+  btn.textContent = '⏳ Generating PDF...';
+  btn.disabled = true;
 
-function getPDFContent() {
-  // Get the current report data from Redis
-  return fetch('/api/report')
-    .then(r => r.json())
-    .then(({ report }) => {
-      if (!report) return '<p>No report data available</p>';
-      
-      const data = typeof report.content === 'object'
-        ? report.content
-        : JSON.parse(report.content);
+  try {
+    // Fetch report data first
+    const response = await fetch('/api/report');
+    const { report } = await response.json();
 
-      return renderPDFReport(data, report.timestamp);
-    });
+    if (!report) {
+      alert('No report data available. Please run the workflow first.');
+      return;
+    }
+
+    const data = typeof report.content === 'object'
+      ? report.content
+      : JSON.parse(report.content);
+
+    // Create PDF container
+    const pdfContent = document.createElement('div');
+    pdfContent.style.cssText = `
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #000000;
+      background: #ffffff;
+      padding: 40px;
+      max-width: 800px;
+    `;
+
+    // Build content
+    const reportDate = timestampEl.textContent || 'Latest Report';
+    pdfContent.innerHTML = `
+      <div style="border-bottom: 3px solid #e2001a; padding-bottom: 20px; margin-bottom: 30px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+          <span style="font-size: 1.8rem;">🛡️🤖</span>
+          <h1 style="font-size: 1.6rem; color: #000; margin: 0;">
+            Agentic Intelligence Agent's Live Output
+          </h1>
+        </div>
+        <p style="color: #666; margin: 0; font-size: 0.9rem;">
+          Powered by CrowdStrike Falcon AI | ${reportDate}
+        </p>
+      </div>
+      ${renderPDFReport(data, report.timestamp)}
+    `;
+
+    // PDF options
+    const options = {
+      margin: [10, 10, 10, 10],
+      filename: `threat-intelligence-report-${new Date().toISOString().split('T')[0]}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
+      },
+      pagebreak: {
+        mode: ['avoid-all', 'css', 'legacy']
+      }
+    };
+
+    await html2pdf().set(options).from(pdfContent).save();
+
+  } catch (err) {
+    console.error('PDF generation error:', err);
+    alert('Error generating PDF: ' + err.message);
+  } finally {
+    btn.textContent = '📄 Download PDF';
+    btn.disabled = false;
+  }
 }
 
 function renderPDFReport(data, timestamp) {
