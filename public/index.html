@@ -1600,45 +1600,76 @@ function renderPDFActions(actions) {
   });
   return html;
 }
-    async function clearReport() {
-  if (!confirm('Are you sure you want to clear the stored report?')) {
+   async function clearReport() {
+  // First confirmation
+  const firstConfirm = confirm(
+    '⚠️ WARNING ⚠️\n\n' +
+    'You are about to permanently delete the stored intelligence report.\n\n' +
+    'This will:\n' +
+    '• Remove the report from storage\n' +
+    '• Clear the dashboard display\n' +
+    '• Require a new workflow run to restore\n\n' +
+    'Are you sure you want to continue?'
+  );
+
+  if (!firstConfirm) return;
+
+  // Second confirmation — make them type it
+  const secondConfirm = prompt(
+    '🚨 FINAL WARNING 🚨\n\n' +
+    'Type "NUKE" to confirm deletion of the intelligence report.\n\n' +
+    'This action cannot be undone.'
+  );
+
+  if (secondConfirm !== 'NUKE') {
+    if (secondConfirm !== null) {
+      alert('❌ Incorrect confirmation. Report was NOT deleted.');
+    }
     return;
   }
 
   const btn = document.getElementById('clear-btn');
-  btn.textContent = '⏳ Clearing...';
+  btn.textContent = '💥 Nuking...';
   btn.disabled = true;
 
   try {
     const response = await fetch('/api/clear-report', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' }
     });
 
     const data = await response.json();
 
     if (response.ok && data.success) {
-      // Clear the display
-      outputContent.innerHTML = `
-        <p style="color:#444; text-align:center; padding:60px 0">
-          ⏳ Waiting for agent output...
-        </p>`;
-      timestampEl.textContent = 'Waiting for first update...';
-      updateHistory = [];
-      renderHistory();
-      alert('Report cleared successfully!');
+      // Dramatic clear sequence
+      outputContent.style.transition = 'opacity 0.5s';
+      outputContent.style.opacity = '0';
+      
+      setTimeout(() => {
+        outputContent.innerHTML = `
+          <p style="color:#ef4444; text-align:center; padding:60px 0; font-size:1.1rem;">
+            💥 Report Nuked Successfully
+          </p>
+          <p style="color:#444; text-align:center; padding:0 0 60px 0">
+            Run the workflow to generate a new report.
+          </p>`;
+        outputContent.style.opacity = '1';
+        timestampEl.textContent = 'Waiting for first update...';
+        updateHistory = [];
+        renderHistory();
+      }, 500);
+
     } else {
-      alert('Error clearing report: ' + (data.error || 'Unknown error'));
+      alert('❌ Error nuking report: ' + (data.error || 'Unknown error'));
     }
   } catch (err) {
-    alert('Error clearing report: ' + err.message);
+    alert('❌ Error nuking report: ' + err.message);
   } finally {
-    btn.textContent = '🗑️ Clear Report';
+    btn.textContent = '☢️ Nuke Report';
     btn.disabled = false;
   }
 }
+
     function initApp() {
       if (ablyInitialized) return;
       ablyInitialized = true;
