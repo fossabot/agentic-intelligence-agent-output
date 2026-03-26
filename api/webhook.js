@@ -427,6 +427,7 @@ module.exports = async function handler(req, res) {
 
     console.log('Content ready, type:', type);
     // Override timestamps with actual server time
+    // Add unique report_id for reliable latest event lookup
     if (content.executive_summary) {
       const serverTime = new Date().toISOString()
         .replace('T', ' ')
@@ -435,6 +436,10 @@ module.exports = async function handler(req, res) {
       content.executive_summary.report_published = serverTime;
       console.log('Timestamps set to server time:', serverTime);
     }
+    // Add report_id as Unix timestamp for sorting
+    content.report_id = new Date().getTime();
+    console.log('Report ID set to:', content.report_id);
+
     console.log('Content keys:', Object.keys(content).join(', '));
 
   } catch (parseError) {
