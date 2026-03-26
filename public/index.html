@@ -6,6 +6,8 @@
   <title>Intelligence Analyst Agent</title>
   <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -129,6 +131,26 @@
     #logout-btn:hover {
       border-color: #ef4444;
       color: #ef4444;
+    }
+    #pdf-btn {
+      background: #a78bfa;
+      border: none;
+      color: #0f1117;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+
+    #pdf-btn:hover {
+      background: #9061f9;
+    }
+
+    #pdf-btn:disabled {
+      background: #555;
+      cursor: not-allowed;
     }
 
     #status-indicator {
@@ -545,6 +567,9 @@
           <div id="status-dot"></div>
           <span id="status-text">Connecting...</span>
         </div>
+        <button id="pdf-btn" onclick="downloadPDF()">
+          📄 Download PDF
+        </button>
         <button id="logout-btn" onclick="logout()">Logout</button>
       </div>
     </header>
@@ -1140,6 +1165,347 @@
         outputContainer.classList.remove('updating');
       }, 300);
     }
+async function downloadPDF() {
+  const btn = document.getElementById('pdf-btn');
+  btn.textContent = '⏳ Generating PDF...';
+  btn.disabled = true;
+
+  try {
+    // Create a clean PDF-friendly version of the report
+    const pdfContent = document.createElement('div');
+    pdfContent.style.cssText = `
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #000000;
+      background: #ffffff;
+      padding: 40px;
+      max-width: 800px;
+    `;
+
+    // Add header
+    const reportDate = timestampEl.textContent || 'Latest Report';
+    pdfContent.innerHTML = `
+      <div style="border-bottom: 3px solid #e2001a; padding-bottom: 20px; margin-bottom: 30px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+          <span style="font-size: 1.8rem;">🛡️🤖</span>
+          <h1 style="font-size: 1.6rem; color: #000; margin: 0;">
+            Agentic Intelligence Agent's Live Output
+          </h1>
+        </div>
+        <p style="color: #666; margin: 0; font-size: 0.9rem;">
+          Powered by CrowdStrike Falcon AI | ${reportDate}
+        </p>
+      </div>
+      ${getPDFContent()}
+    `;
+
+    // PDF options
+    const options = {
+      margin: [10, 10, 10, 10],
+      filename: `threat-intelligence-report-${new Date().toISOString().split('T')[0]}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
+      },
+      pagebreak: {
+        mode: ['avoid-all', 'css', 'legacy']
+      }
+    };
+
+    await html2pdf().set(options).from(pdfContent).save();
+
+  } catch (err) {
+    console.error('PDF generation error:', err);
+    alert('Error generating PDF. Please try again.');
+  } finally {
+    btn.textContent = '📄 Download PDF';
+    btn.disabled = false;
+  }
+}
+
+function getPDFContent() {
+  // Get the current report data from Redis
+  return fetch('/api/report')
+    .then(r => r.json())
+    .then(({ report }) => {
+      if (!report) return '<p>No report data available</p>';
+      
+      const data = typeof report.content === 'object'
+        ? report.content
+        : JSON.parse(report.content);
+
+      return renderPDFReport(data, report.timestamp);
+    });
+}
+
+function renderPDFReport(data, timestamp) {
+  let html = '';
+
+  // Executive Summary
+  const exec = data.executive_summary || {};
+  const analysisDate = exec.analysis_timestamp || exec.analysis_date || '';
+  const overview = exec.overview || exec.summary || '';
+  const priorities = toArray(exec.highest_priority_risks || exec.priorities || []);
+  const keyFindings = toArray(exec.key_findings || exec.findings || []);
+
+  html += `
+    <div style="margin-bottom: 30px;">
+      <h2 style="color: #e2001a; font-size: 1.2rem; border-bottom: 1px solid #ddd; 
+                 padding-bottom: 8px; margin-bottom: 16px;">
+        📋 Executive Summary
+      </h2>
+      <table style="width: 100%; margin-bottom: 16px; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px; background: #f5f5f5; width: 50%; font-size: 0.85rem;">
+            <strong>Analysis Date:</strong><br/>${analysisDate || 'N/A'}
+          </td>
+          <td style="padding: 8px; background: #f5f5f5; width: 50%; font-size: 0.85rem;">
+            <strong>Report Published:</strong><br/>${exec.report_published || analysisDate || 'N/A'}
+          </td>
+        </tr>
+      </table>
+      ${overview ? `
+        <p style="font-size: 0.9rem; line-height: 1.6; color: #333; margin-bottom: 16px;">
+          ${overview}
+        </p>
+      ` : ''}
+      ${priorities.length ? `
+        <h3 style="font-size: 1rem; color: #333; margin-bottom: 8px;">
+          Highest Priority Risks
+        </h3>
+        <ul style="margin: 0; padding-left: 20px;">
+          ${priorities.map(p => `
+            <li style="font-size: 0.85rem; margin-bottom: 4px; color: #333;">
+              ${typeof p === 'string' ? p : JSON.stringify(p)}
+            </li>
+          `).join('')}
+        </ul>
+      ` : ''}
+      ${keyFindings.length ? `
+        <h3 style="font-size: 1rem; color: #333; margin: 16px 0 8px;">
+          Key Findings
+        </h3>
+        <ul style="margin: 0; padding-left: 20px;">
+          ${keyFindings.map(f => `
+            <li style="font-size: 0.85rem; margin-bottom: 4px; color: #333;">
+              ${typeof f === 'string' ? f : JSON.stringify(f)}
+            </li>
+          `).join('')}
+        </ul>
+      ` : ''}
+    </div>
+  `;
+
+  // Risk Findings
+  const risks = toArray(
+    data.risk_findings || data.risks || data.findings || []
+  );
+  if (risks.length) {
+    html += `
+      <div style="margin-bottom: 30px;">
+        <h2 style="color: #e2001a; font-size: 1.2rem; border-bottom: 1px solid #ddd;
+                   padding-bottom: 8px; margin-bottom: 16px;">
+          🚨 Risk Findings (${risks.length})
+        </h2>
+        ${risks.map(risk => renderPDFRiskFinding(risk)).join('')}
+      </div>
+    `;
+  }
+
+  // Threat Actors
+  const actors = toArray(data.threat_actors || data.adversaries || []);
+  if (actors.length) {
+    html += `
+      <div style="margin-bottom: 30px;">
+        <h2 style="color: #e2001a; font-size: 1.2rem; border-bottom: 1px solid #ddd;
+                   padding-bottom: 8px; margin-bottom: 16px;">
+          🎭 Threat Actors
+        </h2>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          ${actors.map(a => `
+            <span style="background: #fff3e0; border: 1px solid #f59e0b; 
+                         border-radius: 4px; padding: 4px 10px; 
+                         font-size: 0.8rem; color: #b45309;">
+              ${a}
+            </span>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Recommended Actions
+  const actions = data.recommended_actions || data.recommendations;
+  if (actions) {
+    html += `
+      <div style="margin-bottom: 30px;">
+        <h2 style="color: #e2001a; font-size: 1.2rem; border-bottom: 1px solid #ddd;
+                   padding-bottom: 8px; margin-bottom: 16px;">
+          ✅ Recommended Actions
+        </h2>
+        ${renderPDFActions(actions)}
+      </div>
+    `;
+  }
+
+  // Footer
+  html += `
+    <div style="border-top: 2px solid #e2001a; padding-top: 16px; margin-top: 30px;
+                text-align: center; color: #666; font-size: 0.75rem;">
+      <p>Generated by CrowdStrike Agentic Intelligence Agent | ${timestamp || new Date().toISOString()}</p>
+      <p>CONFIDENTIAL — For authorized recipients only</p>
+    </div>
+  `;
+
+  return html;
+}
+
+function renderPDFRiskFinding(risk) {
+  const title = risk.risk_title || risk.title || 'Unknown Risk';
+  const rating = risk.rating || risk.severity || '';
+  const description = risk.description || risk.details || '';
+  const actors = toArray(risk.threat_actors || risk.actors || []);
+  const mitre = toArray(risk.mitre_attack || risk.mitre || []);
+  const impact = risk.organizational_impact || risk.impact || '';
+  const recs = toArray(risk.recommendations || risk.remediation || []);
+
+  const ratingColors = {
+    critical: { bg: '#fef2f2', border: '#ef4444', text: '#dc2626' },
+    high: { bg: '#fffbeb', border: '#f59e0b', text: '#d97706' },
+    medium: { bg: '#eff6ff', border: '#3b82f6', text: '#2563eb' },
+    low: { bg: '#f0fdf4', border: '#22c55e', text: '#16a34a' }
+  };
+
+  const ratingKey = rating.toLowerCase();
+  const colors = ratingColors[ratingKey] || 
+    { bg: '#f9fafb', border: '#9ca3af', text: '#6b7280' };
+
+  return `
+    <div style="border: 1px solid #e5e7eb; border-radius: 8px; 
+                padding: 16px; margin-bottom: 16px; 
+                border-left: 4px solid ${colors.border};
+                background: #ffffff;">
+      <div style="display: flex; justify-content: space-between; 
+                  align-items: flex-start; margin-bottom: 12px;">
+        <h3 style="font-size: 0.95rem; color: #111; margin: 0; flex: 1;">
+          ⚠️ ${title}
+        </h3>
+        ${rating ? `
+          <span style="background: ${colors.bg}; color: ${colors.text}; 
+                       border: 1px solid ${colors.border};
+                       padding: 2px 10px; border-radius: 12px; 
+                       font-size: 0.75rem; font-weight: 700;
+                       text-transform: uppercase; white-space: nowrap;
+                       margin-left: 8px;">
+            ${rating}
+          </span>
+        ` : ''}
+      </div>
+      ${actors.length ? `
+        <p style="font-size: 0.8rem; color: #666; margin-bottom: 8px;">
+          <strong>Threat Actors:</strong> ${actors.join(', ')}
+        </p>
+      ` : ''}
+      ${description ? `
+        <p style="font-size: 0.85rem; color: #333; line-height: 1.5; 
+                  margin-bottom: 8px;">
+          ${description}
+        </p>
+      ` : ''}
+      ${mitre.length ? `
+        <p style="font-size: 0.8rem; color: #666; margin-bottom: 8px;">
+          <strong>MITRE ATT&CK:</strong> ${mitre.join(' | ')}
+        </p>
+      ` : ''}
+      ${impact ? `
+        <div style="background: #fafafa; padding: 8px; border-radius: 4px; 
+                    margin-bottom: 8px;">
+          <p style="font-size: 0.8rem; color: #333; margin: 0;">
+            <strong>Organizational Impact:</strong> ${impact}
+          </p>
+        </div>
+      ` : ''}
+      ${recs.length ? `
+        <div>
+          <p style="font-size: 0.8rem; font-weight: 700; 
+                    color: #333; margin-bottom: 4px;">
+            Recommendations:
+          </p>
+          <ol style="margin: 0; padding-left: 20px;">
+            ${recs.map(r => `
+              <li style="font-size: 0.8rem; color: #333; margin-bottom: 3px;">
+                ${r}
+              </li>
+            `).join('')}
+          </ol>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderPDFActions(actions) {
+  if (!actions) return '';
+  if (Array.isArray(actions)) {
+    return `<ol style="padding-left: 20px;">
+      ${actions.map(a => `
+        <li style="font-size: 0.85rem; color: #333; margin-bottom: 4px;">${a}</li>
+      `).join('')}
+    </ol>`;
+  }
+
+  const sections = [
+    {
+      key: 'immediate_24_48_hours',
+      label: '🔴 Immediate (24-48 Hours)',
+      color: '#dc2626'
+    },
+    {
+      key: 'high_priority_7_days',
+      label: '🟡 High Priority (7 Days)',
+      color: '#d97706'
+    },
+    {
+      key: 'medium_priority_30_days',
+      label: '🔵 Medium Priority (30 Days)',
+      color: '#2563eb'
+    },
+    {
+      key: 'ongoing_continuous',
+      label: '🟢 Ongoing / Continuous',
+      color: '#16a34a'
+    }
+  ];
+
+  let html = '';
+  sections.forEach(({ key, label, color }) => {
+    const items = toArray(actions[key]);
+    if (!items.length) return;
+    html += `
+      <div style="margin-bottom: 16px;">
+        <h3 style="font-size: 0.9rem; color: ${color}; 
+                   margin-bottom: 8px; padding: 4px 8px;
+                   background: ${color}15; border-radius: 4px;">
+          ${label}
+        </h3>
+        <ol style="margin: 0; padding-left: 20px;">
+          ${items.map(item => `
+            <li style="font-size: 0.8rem; color: #333; margin-bottom: 4px;">
+              ${item}
+            </li>
+          `).join('')}
+        </ol>
+      </div>
+    `;
+  });
+  return html;
+}
 
     function initApp() {
       if (ablyInitialized) return;
