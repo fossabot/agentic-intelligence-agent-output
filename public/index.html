@@ -132,20 +132,35 @@
       border-color: #ef4444;
       color: #ef4444;
     }
+    
     #clear-btn {
-      background: none;
-      border: 1px solid #2a2d3a;
-      color: #666;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid #ef4444;
+      color: #ef4444;
       padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
       font-size: 0.8rem;
+      font-weight: 700;
       transition: all 0.2s;
+      animation: danger-pulse 2s infinite;
     }
 
     #clear-btn:hover {
-      border-color: #ef4444;
-      color: #ef4444;
+      background: #ef4444;
+      color: #ffffff;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+    }
+
+    #clear-btn:disabled {
+      animation: none;
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    @keyframes danger-pulse {
+      0%, 100% { box-shadow: 0 0 4px rgba(239, 68, 68, 0.3); }
+      50% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.7); }
     }
 
     #pdf-btn {
